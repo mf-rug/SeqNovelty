@@ -122,11 +122,13 @@ if (scrollContainer && table) {
     box-shadow: #de00c6 0px 0px 1px 1px inset !important;
     background-color: #9900FF69 !important;
 }
+
 /* 🔹 Add a dashed border around the hovered cell */
-#alignment_table table.dataTable tbody tr:not(:first-child) td:hover {
+#alignment_table table.dataTable tbody tr:not(:first-child) td:not(:nth-child(1)):hover {
     box-shadow: #de00c6 0px 0px 1px 1px inset !important;
     cursor: crosshair;
-    }
+}
+    
     .error_out {
         height: 100%;
         border: 1px solid transparent;
@@ -332,51 +334,56 @@ table.dataTable .rowname-col span {
       "input.mode=='msa'", fileInput("fasta_file_msa", "Upload MSA .fasta file", accept = c(".fasta", ".fa"))
     ),
       uiOutput("seq_id_dropdown"),  # Dynamically generated dropdown for sequence IDs
-    br(),HTML('<small>'),
-    HTML('<strong>Ref sequence</strong>'),
-      HTML('<hr style="margin: 0px 0 10px; border-color: #656565; "/>'),
-    div(class = "flex-container",
-        div(class = "flex-item", HTML("novel:&nbsp<br>&nbsp")),
-        div(class = "flex-item", prettySwitch('boldn', 'bold', value = TRUE, status = 'primary')),
-        div(class = "flex-item", colourpicker::colourInput(
-          "novel_col", NULL, "black",
-          allowTransparent = TRUE,
-          closeOnClick = TRUE))),
-    div(class = "flex-container",
-        div(class = "flex-item", HTML("matched:&nbsp&nbsp<br>&nbsp"),
-               prettySwitch('boldm', 'bold', value = FALSE, status = 'primary')),
-        div(class = "flex-item", colourpicker::colourInput(
-          "matched_col", NULL, "black",
-          allowTransparent = TRUE,
-          closeOnClick = TRUE))),
-      prettySwitch('ref_nums', 'show ref seq numbering', value = FALSE, status = 'primary'),
-      HTML('<strong>Aligned sequences</strong>'),
-      HTML('<hr style="margin: 0px 0 10px; border-color: #656565; "/>'),
-    div(class = "flex-container",
-        div(class = "flex-item", "consumed match"),
-        div(class = "flex-item", colourpicker::colourInput(
-          "match_con_col", NULL, "black",
-          allowTransparent = TRUE,
-          closeOnClick = TRUE))),
-    div(class = "flex-container",
-        div(class = "flex-item", "unconsumed match"),
-        div(class = "flex-item", 
-            colourpicker::colourInput(
-          "match_noncon_col", NULL, "#94949480",
-          allowTransparent = TRUE,
-          closeOnClick = TRUE))),
-    div(class = "flex-container",
-        div(class = "flex-item", "no match"),
-        div(class = "flex-item", colourpicker::colourInput(
-         "nomatch_col", NULL, "#9494942C",
-         allowTransparent = TRUE,
-         closeOnClick = TRUE))),
-     
+    br(),
+    tags$details(
+      tags$summary(HTML("Visualization Settings<br><br>")),
+      div(
+        HTML('<small>'),
+        HTML('<strong>Ref sequence</strong>'),
+          HTML('<hr style="margin: 0px 0 10px; border-color: #656565; "/>'),
+        div(class = "flex-container",
+            div(class = "flex-item", HTML("novel:&nbsp<br>&nbsp")),
+            div(class = "flex-item", prettySwitch('boldn', 'bold', value = TRUE, status = 'primary')),
+            div(class = "flex-item", colourpicker::colourInput(
+              "novel_col", NULL, "black",
+              allowTransparent = TRUE,
+              closeOnClick = TRUE))),
+        div(class = "flex-container",
+            div(class = "flex-item", HTML("matched:&nbsp&nbsp<br>&nbsp"),
+                   prettySwitch('boldm', 'bold', value = FALSE, status = 'primary')),
+            div(class = "flex-item", colourpicker::colourInput(
+              "matched_col", NULL, "black",
+              allowTransparent = TRUE,
+              closeOnClick = TRUE))),
+          prettySwitch('ref_nums', 'show ref seq numbering', value = FALSE, status = 'primary'),
+          HTML('<strong>Aligned sequences</strong>'),
+          HTML('<hr style="margin: 0px 0 10px; border-color: #656565; "/>'),
+        div(class = "flex-container",
+            div(class = "flex-item", "consumed match"),
+            div(class = "flex-item", colourpicker::colourInput(
+              "match_con_col", NULL, "black",
+              allowTransparent = TRUE,
+              closeOnClick = TRUE))),
+        div(class = "flex-container",
+            div(class = "flex-item", "unconsumed match"),
+            div(class = "flex-item", 
+                colourpicker::colourInput(
+              "match_noncon_col", NULL, "#94949480",
+              allowTransparent = TRUE,
+              closeOnClick = TRUE))),
+        div(class = "flex-container",
+            div(class = "flex-item", "no match"),
+            div(class = "flex-item", colourpicker::colourInput(
+             "nomatch_col", NULL, "#9494942C",
+             allowTransparent = TRUE,
+             closeOnClick = TRUE))),
+        HTML('</small')
+      )
+    ),
     actionButton("run_script", "Run Analysis"),
     actionButton("run_testm", "Demo Run"),
     # actionButton("run_testm", "Test Run M"),
     # prettySwitch('rem_gaps', 'rem_gaps', value = TRUE, status = 'primary'),
-    HTML('</small'),
     width=3
     ),
     

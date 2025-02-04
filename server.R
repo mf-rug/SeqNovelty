@@ -625,31 +625,30 @@ shinyServer(function(input, output, session) {
   # Render the alignment table
   output$alignment_table <- DT::renderDataTable({
     req(results$alignment_table, results$seq_info)
-    
-    # Make a new df object for modification
-    df <- results$alignment_table[, -1]
-    
-    # Create a logical vector to track non-all-gap columns
-    non_gap_columns <- !apply(df, 2, function(x) all(str_detect(x, '-')))
-    
-    # Keep track of the original indices of the non-gap columns
-    original_indices <- which(non_gap_columns)
-    
-    # if (input$rem_gaps) {
-      # Remove the all-gap columns
-      df <- df[, non_gap_columns]
-    # }
-    # Reference sequence name dynamically
-    if (!is.null(isolate(input$seq_id))) {
-      print(paste('manually setting ref_name to', isolate(input$seq_id)))
-      ref_name(isolate(input$seq_id))
-    } 
-    
-    # Apply coloring to non-reference sequences
-    seq_color <- input$col
-    
     withProgress(message = "parsing df", value = 0.7, {
-      # browser()
+        
+      # Make a new df object for modification
+      df <- results$alignment_table[, -1]
+      
+      # Create a logical vector to track non-all-gap columns
+      non_gap_columns <- !apply(df, 2, function(x) all(str_detect(x, '-')))
+      
+      # Keep track of the original indices of the non-gap columns
+      original_indices <- which(non_gap_columns)
+      
+      # if (input$rem_gaps) {
+        # Remove the all-gap columns
+        df <- df[, non_gap_columns]
+      # }
+      # Reference sequence name dynamically
+      if (!is.null(isolate(input$seq_id))) {
+        print(paste('manually setting ref_name to', isolate(input$seq_id)))
+        ref_name(isolate(input$seq_id))
+      } 
+      
+      # Apply coloring to non-reference sequences
+      seq_color <- input$col
+    # browser()
       for (seq_name in rownames(df)[rownames(df) != ref_name()]) {  
         if (!is.null(results$seq_info[[seq_name]]) && !is.null(results$seq_info[[seq_name]]$matched_indices)) {
           
@@ -937,14 +936,19 @@ shinyServer(function(input, output, session) {
     selcol <- input$col_selected -2 # correct indexing and first col is name
     
     df <- results$alignment_table
+    non_gap_columns <- !apply(df, 2, function(x) all(str_detect(x, '-')))
+    
+    # Remove the all-gap columns
+    df <- df[, non_gap_columns]
+    
     # browser()
     if (is.null(selrow) || length(df$Name[selrow]) == 0) {
       info <- '<i>Select a residue for more info.</i>'
     } else {
       other_seqs_res <- df[-selrow, selcol + 1]
       num_identical <- length(which(other_seqs_res %in% df[selrow, -1][selcol]))
-      perc_identical <- num_identical / length(other_seqs_res) * 100
-
+      perc_identical <- round(num_identical / length(other_seqs_res) * 100,1)
+      browser()
       info <- paste0(
         "Selected: ",
         ifelse(df$Name[selrow] == ref_name(), "analysed sequence ", "hit sequence "),
