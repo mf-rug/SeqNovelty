@@ -23,8 +23,8 @@ options(reticulate.output_handler = function(x) cat(x, "\n"))
 envs <- reticulate::virtualenv_list()
 if (!'venv_seqnovelty_shiny' %in% envs) {
   reticulate::virtualenv_create(
-    envname = 'venv_seqnovelty_shiny'
-    # python = '/opt/homebrew/bin/python3'
+    envname = 'venv_seqnovelty_shiny',
+    python = '/opt/homebrew/bin/python3'
   )
   reticulate::virtualenv_install(
     'venv_seqnovelty_shiny',
@@ -393,7 +393,10 @@ table.dataTable .rowname-col span {
       ),
       DT::dataTableOutput("alignment_table"),  # Render the output table here
       HTML('<hr style="margin: 0px 0 5px; border-color: #656565; "/>'),
-      uiOutput('novelty_text'), br(),
+      fluidRow(
+        column(6, uiOutput('novelty_text')),
+        column(6, uiOutput('res_analysis'))
+      ), br(),
       uiOutput('novelty_media'),
       br(),
       width = 9

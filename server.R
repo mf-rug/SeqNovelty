@@ -6,6 +6,12 @@ shinyServer(function(input, output, session) {
   ref_name <- reactiveVal(NULL)
   test <- reactiveVal(NULL)
   ref_seq_start_col <- reactiveVal(NULL)
+  structure <- reactiveVal('')
+  
+  hl <- function(...) {
+    paste0('<span style="color:', ifelse(input$dark_mode == 'dark', 'aqua', 'teal'), 
+           ';"><big>', ...,'</span></big>')
+  }
   
   parse_fasta_in <- function(input_string) {
     if (str_detect(input_string, '^>')) {
@@ -685,7 +691,7 @@ shinyServer(function(input, output, session) {
         # }
         # save the column where the ref seq starts (no gap) for prescrolling
         ref_seq_start_col(min(which(df[1,] != '-')))
-        
+
         # Apply modifications: Surround matched residues with <b></b>
         ref_bold <- sapply(seq_len(ncol(df)), function(x) {
           if (x %in% (matched_indices ) && input$boldm) {  # Convert Python to R indexing
@@ -697,7 +703,6 @@ shinyServer(function(input, output, session) {
             df[1, x]
           }
         })
-        
         ref_bold <- sapply(seq_len(ncol(df)), function(x) {
           if (x %in% (matched_indices)) {  # Convert Python to R indexing
             paste0('<span style="color:', input$matched_col, '">', ref_bold[x], '</span>')
@@ -709,7 +714,7 @@ shinyServer(function(input, output, session) {
         })
         
         if (input$ref_nums) {
-          ref_seq_wg <- df[1, ]  # Replace this with your actual input vector
+          ref_seq_wg <- df[1, ]  # input seq
           counter <- 0
           ref_nums <- sapply(ref_seq_wg, function(x) {
             if (x != "-") {  # Check if it's not a "-"
@@ -924,14 +929,23 @@ shinyServer(function(input, output, session) {
     ref_seq <- results$alignment_table[ref_name(), -1]
     ref_len <- length(ref_seq[!str_detect(ref_seq, '-')])
     match_len <- length(results$seq_info[[ref_name()]]$matched_indices)
-    
-    hl <- function(...) {
-      paste0('<span style="color:', ifelse(input$dark_mode == 'dark', 'aqua', 'teal'), 
-             ';"><big>', ...,'</span></big>')
-    }
+
     label = paste0('Sequence novelty:<br>', hl(ref_len - match_len, ' / ', ref_len),
                    ' amino acids',
                    hl(' (',round(100 - max(results$coverage_df$CumulativeCoverage), 1), '%)'))
+    renderUI(HTML(
+      paste0(
+        '<div class="error_out" style="height:100%;">',
+        label,
+        '</div>'
+      )
+    ))
+  })  
+  
+  
+  output$res_analysis <- renderUI({
+    req(results$alignment_table)
+
     selrow <- input$row_selected
     selcol <- input$col_selected -2 # correct indexing and first col is name
     
@@ -948,7 +962,6 @@ shinyServer(function(input, output, session) {
       other_seqs_res <- df[-selrow, selcol + 1]
       num_identical <- length(which(other_seqs_res %in% df[selrow, -1][selcol]))
       perc_identical <- round(num_identical / length(other_seqs_res) * 100,1)
-      browser()
       info <- paste0(
         "Selected: ",
         ifelse(df$Name[selrow] == ref_name(), "analysed sequence ", "hit sequence "),
@@ -966,36 +979,23 @@ shinyServer(function(input, output, session) {
         ),
         ' of natural, aligned sequences',
         ifelse(df$Name[selrow] == ref_name(), 
-          ifelse(
-            perc_identical == 0,
-            '<br>→ <span style="color:green;"> novel',
-            '<br>→ <span style="color:red;">not novel'
-          ), '')
+               ifelse(
+                 perc_identical == 0,
+                 paste0('<br>→ <span style="color:green;"> novel',
+                        ifelse(all(other_seqs_res == '-'), 
+                               ' insertion', 
+                               ifelse(df[selrow, -1][selcol] == '-' && all(other_seqs_res != '-'), 
+                                      ' deletion', 
+                                      ' mutation'))),
+                 '<br>→ <span style="color:red;">not novel'
+               ), '')
       )
     }
-
-    renderUI(
-      fluidRow(
-        column(6,
-               HTML(
-                 paste0(
-                   '<div class="error_out" style="height:100%;">',
-                   label,
-                   '</div>'
-                 )
-               )
-        ),
-        column(6,
-               HTML(
-                 paste0(
-                   '<div class="error_out" style="height:100%;">',
-                   info,
-                   '</div>'
-                 )
-               )
-        )
-      )
-    )
+    
+    renderUI(HTML(
+      paste0('<div class="error_out" style="height:100%;">', info, '</div>')
+    ))
+    
   })
   
   
@@ -1052,23 +1052,11 @@ shinyServer(function(input, output, session) {
         writeLines(pdb_result, pdb_file)
         # Render the PDB in 3Dmol.js
         
+        shinyjs::hide('structure')
         output$structure_view <- renderUI(r3dmolOutput('molView'))
         
-        output$molView <- renderR3dmol({
-          r3dmol() %>%
-            m_add_model(pdb_result, format = "pdb") %>%
-            m_set_style(style = m_style_cartoon()) %>%
-            m_zoom_to() %>% 
-            m_add_style(
-              style = m_style_cartoon(color = input$matched_col),
-              sel = m_sel(resi = matched_resi)
-            ) %>% 
-            m_add_style(
-              style = m_style_cartoon(color = input$novel_col),
-              sel = m_sel(resi = setdiff(1:str_count(sequence), matched_resi))
-            ) %>% 
-            m_set_background_color(hex = ifelse(input$dark_mode == 'dark', '#000000', '#ffffff'))
-        })
+        structure(pdb_file)
+
       } else {
         output$molView <- renderText("Error fetching structure.")
       }
@@ -1083,5 +1071,61 @@ shinyServer(function(input, output, session) {
         )
       )
     }
+  })
+
+
+  output$molView <- renderR3dmol({
+    if (structure() != '') {
+      pdb_result <- structure()
+      ref_seq <- results$alignment_table[1,-1]
+      sequence <- paste0(ref_seq, collapse = '') %>% str_remove_all(., '-')
+      matched_col <-  results$seq_info[[ref_name()]]$matched_indices +1
+      matched_resi <- convert_col_to_residue(ref_seq, matched_col)
+      
+      selrow <- input$row_selected
+      selcol <- input$col_selected -2 # correct indexing and first col is name
+      
+      df <- results$alignment_table
+      non_gap_columns <- !apply(df, 2, function(x) all(str_detect(x, '-')))
+      
+      # Remove the all-gap columns
+      df <- df[, non_gap_columns]
+      
+      
+      ref_seq_wg <- df[1, ]  # input seq
+      counter <- 0
+      ref_nums <- sapply(ref_seq_wg, function(x) {
+        if (x != "-") {  # Check if it's not a "-"
+          counter <<- counter + 1  # Increment the counter globally
+            return(counter)  # Return the counter for every 5th position
+        } else {
+          return(" ")  # Keep "-" for gaps
+        }
+      })
+      
+      # browser()
+      out <<- r3dmol() %>%
+        m_add_model(pdb_result, format = "pdb") %>%
+        m_set_style(style = m_style_cartoon()) %>%
+        m_zoom_to() %>% 
+        m_add_style(
+          style = m_style_cartoon(color = input$matched_col),
+          sel = m_sel(resi = matched_resi)
+        ) %>% 
+        m_add_style(
+          style = m_style_cartoon(color = input$novel_col),
+          sel = m_sel(resi = setdiff(1:str_count(sequence), matched_resi))
+        ) %>% 
+        m_set_background_color(hex = ifelse(input$dark_mode == 'dark', '#000000', '#ffffff'))
+      
+      if (length(selrow) > 0) {
+        out <- out %>% 
+          m_add_style(
+            style = m_style_stick(color = '#de00c6'),
+            sel = m_sel(resi = as.numeric(ref_nums[selcol]))
+          )
+      }
+      out
+      }
   })
 })
