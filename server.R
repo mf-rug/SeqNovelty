@@ -239,7 +239,7 @@ shinyServer(function(input, output, session) {
           FORMAT_TYPE = "JSON2_S",          # Options: JSON2, XML, Text
           FORMAT_OBJECT = "Alignment"   # Retrieve alignments
         ))
-        return(content(results_response, as = "text"))
+        return(list(rid, content(results_response, as = "text")))
       } else {
         print('something odd')
         # browser()
@@ -247,6 +247,7 @@ shinyServer(function(input, output, session) {
     }
     stop("BLAST job did not complete in time.")
   }
+  
   extract_blast_ids <- function(json_file, single_id=TRUE) {
     # Read the JSON file
     blast_data <- fromJSON(json_file)
@@ -345,10 +346,12 @@ shinyServer(function(input, output, session) {
     
     withProgress(message = "Starting BLAST", value = 0.15, {
       blast_results <- run_blast(input_seq, program = 'blastp', database = 'nr')
+      rid <- blast_results[[1]]
+      blast_out <- blast_results[[2]]
     })
     # if (success) {
     withProgress(message = "Processing BLAST", value = 0.6, {
-      write_file(blast_results, 'blast_out.blast')
+      write_file(blast_out, 'blast_out.blast')
       ids <- extract_blast_ids('blast_out.blast', single_id=TRUE)
     })
     # } else { stop() }
@@ -362,7 +365,21 @@ shinyServer(function(input, output, session) {
                  append = TRUE)
       # } else { stop() }
     })
-  })
+    
+    blast_link <- paste0("https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=", rid)
+    browser()
+    sendSweetAlert(
+      session = session,
+      html = TRUE,
+      title = "BLAST ready.",
+      text = tags$span(
+        "Blast has finished successfully. You can look at the results under ",
+        tags$a(href = blast_link, target='_blank', blast_link), tags$br(), tags$br(),
+        "To analyse the sequences press the 'Run Analysis' button."
+      ), 
+      type = "info"
+    )
+})
   
   
   
