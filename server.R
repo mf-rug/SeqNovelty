@@ -56,7 +56,9 @@ shinyServer(function(input, output, session) {
         email = "your@email.com",
         title = "R_seqnovelty_Job",
         stype = "protein",
-        sequence = fasta_content
+        sequence = fasta_content,
+        gapopen = 1.6,
+        gapext = 0.15
       ),
       encode = "form"
     )
@@ -340,6 +342,21 @@ shinyServer(function(input, output, session) {
     
       incProgress(message = "Getting sequences", amount = 0.6)
       tryCatch({
+        cutoff <- ifelse(input$msa_tool == 'clustalo',
+                         3999,
+                         ifelse(input$msa_tool == 'kalign', 1999, '499'))
+        if (length(ids) > cutoff) {
+          showNotification(
+            paste0(
+              'This tool is limited to ',
+              cutoff,
+              ' sequences, removing ',
+              length(ids) - cutoff,
+              ' sequences from analysis.'
+            )
+          )
+          Sys.sleep(4)
+        }
         fasta_data <- get_fasta_from_uniprot(ids[1:500])
       }, error = function(e) {
         showNotification(e$message)
@@ -446,16 +463,13 @@ shinyServer(function(input, output, session) {
           }
           writeLines(msa_out, 'initial_alignment.fasta')
           cat('Success')
-          return('Success')
-          
+
         } else {
           print(paste('its an msa, so skipping ', input$msa_tool, ' and using', input_file, 'as initial_alignment.fasta'))
           file.copy(input_file, 'initial_alignment.fasta')
-          return('Success')
         }
       } else {
         print('its a test')
-        return('Success')
       }
     }, error = function(e) {
       results$log <- paste("Error:", e$message)
@@ -707,7 +721,6 @@ shinyServer(function(input, output, session) {
       
       # Apply coloring to non-reference sequences
       seq_color <- input$col
-    # browser()
       for (seq_name in rownames(df)[rownames(df) != ref_name()]) {  
         if (!is.null(results$seq_info[[seq_name]]) && !is.null(results$seq_info[[seq_name]]$matched_indices)) {
           
@@ -717,8 +730,10 @@ shinyServer(function(input, output, session) {
             # Map original indices to new indices
             matched_indices <- which(original_indices %in% matched_indices)       
           # }
-          ref_seq <- results$alignment_table[ref_name(), -1]
+          # ref_seq <- results$alignment_table[ref_name(), -1]
+          ref_seq <- df[1,]
           # Apply color to matched residues
+          # browser()
           df[seq_name, ] <- sapply(seq_len(ncol(df)), function(x) {
             if (!x %in% (matched_indices)) {
               if (df[seq_name, x] == ref_seq[x]) {
@@ -746,25 +761,28 @@ shinyServer(function(input, output, session) {
         ref_seq_start_col(min(which(df[1,] != '-')))
 
         # Apply modifications: Surround matched residues with <b></b>
+        
+        if (input$boldn) {
+          tags_bef <- paste0('<strong><span style="color:', input$novel_col, '">')
+          tags_aft <- '</span></strong>'
+        } else {
+          tags_bef <- paste0('<span style="color:', input$novel_col, '">')
+          tags_aft <- '</span>'
+        }
+        
         ref_bold <- sapply(seq_len(ncol(df)), function(x) {
-          if (x %in% (matched_indices ) && input$boldm) {  # Convert Python to R indexing
+          if (x %in% (matched_indices)) {  
             # paste0('<strong>', df[1, x], '</strong>')
-            df[1, x]
-          } else if (!x %in% (matched_indices) && input$boldn && df[1, x] != '-') {
-            paste0('<strong>', df[1, x], '</strong>')
+              paste0('<span style="color:', input$matched_col, '">', df[1, x], '</span')
           } else {
-            df[1, x]
+            if (df[1, x] == '-') {
+              df[1, x]
+            } else {
+              paste0(tags_bef, df[1, x], tags_aft)
+            }
           }
         })
-        ref_bold <- sapply(seq_len(ncol(df)), function(x) {
-          if (x %in% (matched_indices)) {  # Convert Python to R indexing
-            paste0('<span style="color:', input$matched_col, '">', ref_bold[x], '</span>')
-          } else if (ref_bold[x] != '-') {
-            paste0('<span style="color:', input$novel_col, '">', ref_bold[x], '</span>')
-          } else {
-            ref_bold[x]
-          }
-        })
+
         
         if (input$ref_nums) {
           ref_seq_wg <- df[1, ]  # input seq
@@ -812,13 +830,15 @@ shinyServer(function(input, output, session) {
     # Render the DataTable
     datatable(df,
               escape = FALSE,  # Allows HTML rendering for bold residues
-              extensions = c("FixedColumns", "Select"),
+              extensions = c("FixedColumns", "Buttons"),
               selection = 'none',
               # selection = list(mode = 'single', target = "row+column"),
               options = list(
                 scrollX = TRUE,  # Enable horizontal scrolling
                 paging = FALSE,# Disable paging for a continuous view
+                deferRender = TRUE,
                 ordering = FALSE, 
+                buttons = list('colvis'),  # Adds column visibility buttons
                 info = FALSE,
                 fixedColumns = list(leftColumns = 1),  # Fix the first column
                 searching = FALSE,  # Disable search for simplicity
