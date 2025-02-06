@@ -78,6 +78,7 @@ shinyServer(function(input, output, session) {
       status_response <- GET(live_status)
       status <- content(status_response, as = "text")
       status_out <- paste0("Job status: ", status, "\n", live_status, '\n')
+      cat(status_out)
       incProgress(amount = 0.001, detail = status_out)
       
       if (status == "FINISHED") {
@@ -339,14 +340,14 @@ shinyServer(function(input, output, session) {
     
       incProgress(message = "Getting sequences", amount = 0.6)
       tryCatch({
-        get_fasta_from_uniprot(ids)
+        fasta_data <- get_fasta_from_uniprot(ids[1:500])
       }, error = function(e) {
         showNotification(e$message)
         cat(e$message, '\n')
         return()
       })
     })
-    
+    # browser()
     write_file(paste0('>', input_id, '\n', input_seq, 
                       '\n', fasta_data),
                file = 'search_sequences.fasta')
@@ -440,9 +441,11 @@ shinyServer(function(input, output, session) {
           })
           
           if (is.null(msa_out)) {
+            cat('msa failed\n')
             return(NULL)
           }
           writeLines(msa_out, 'initial_alignment.fasta')
+          cat('Success')
           return('Success')
           
         } else {
