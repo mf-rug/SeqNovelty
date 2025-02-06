@@ -9,6 +9,7 @@ library(colourpicker)
 library(shinyWidgets)
 library(shinytitle)
 library(shinyjs)
+library(httr2)
 library(httr)
 library(stringr)
 library(readr)
@@ -173,6 +174,10 @@ padding-bottom:6px;
 }
 [data-bs-theme='dark'] .btn-default {
     --bs-btn-bg: #0e495a !important; /* White border */
+}
+.dropdown-toggle {
+  padding-top: 8px;
+  padding-bottom: 8px;
 }
     
     table.dataTable td {
@@ -380,6 +385,14 @@ table.dataTable .rowname-col span {
         HTML('</small')
       )
     ),
+    HTML('<hr style="margin: 0px 0 10px; border-color: #656565; "/>'),
+    pickerInput(
+      inputId = "msa_tool",
+      label = HTML("MSA algorithm:&nbsp"), inline = TRUE,
+      choices = c("clustalo","kalign","mafft","muscle","muscle5","tcoffee","webprank"),
+      selected = 'mafft',
+      width = "fit"),
+    HTML('<hr style="margin: 0px 0 15px; border-color: #656565; "/>'),
     actionButton("run_script", "Run Analysis"),
     actionButton("run_testm", "Demo Run"),
     # actionButton("run_testm", "Test Run M"),

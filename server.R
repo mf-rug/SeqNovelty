@@ -44,32 +44,41 @@ shinyServer(function(input, output, session) {
   
 
   # Function to submit and retrieve MAFFT alignment
-  run_mafft <- function(fasta_file) {
+  run_msa <- function(fasta_file, msa_tool) {
     # Read the FASTA file
-    fasta_content <- paste(readLines(fasta_file), collapse = "\n")
+    fasta_content <- readLines(fasta_file)
+    fasta_content <- paste(fasta_content, collapse = '\n')
     
     # Step 1: Submit the job
     response <- POST(
-      url = "https://www.ebi.ac.uk/Tools/services/rest/mafft/run",
+      url = paste0("https://www.ebi.ac.uk/Tools/services/rest/",msa_tool ,"/run"),
       body = list(
         email = "your@email.com",
-        title = "R_MAFFT_Job",
+        title = "R_seqnovelty_Job",
         stype = "protein",
         sequence = fasta_content
       ),
       encode = "form"
     )
     
+    if (str_detect(content(response, as = "text"), 'error')) {
+      showNotification(paste('error', content(response, as = "text")))
+      cat('error', content(response, as = "text"))
+      return(NULL)
+    } else {
+      job_id <- content(response, as = "text")
+    }
     # Extract Job ID
-    job_id <- content(response, as = "text")
-    cat("Job submitted. Job ID:", job_id, "\n")
+    live_status <- paste0("https://www.ebi.ac.uk/Tools/services/rest/",msa_tool ,"/status/", job_id)
+    cat("Job submitted, Job ID:", job_id, "\n")
     
     # Step 2: Check job status
     repeat {
-      Sys.sleep(5)  # Wait 5 seconds before checking status
-      status_response <- GET(paste0("https://www.ebi.ac.uk/Tools/services/rest/mafft/status/", job_id))
+      Sys.sleep(10)  # Wait 5 seconds before checking status
+      status_response <- GET(live_status)
       status <- content(status_response, as = "text")
-      cat("Job status:", status, "\n")
+      status_out <- paste0("Job status: ", status, "\n", live_status, '\n')
+      incProgress(amount = 0.001, detail = status_out)
       
       if (status == "FINISHED") {
         break
@@ -77,7 +86,7 @@ shinyServer(function(input, output, session) {
     }
     
     # Step 3: Retrieve alignment in FASTA format
-    result_response <- GET(paste0("https://www.ebi.ac.uk/Tools/services/rest/mafft/result/", job_id, "/fa"))
+    result_response <- GET(paste0('https://www.ebi.ac.uk/Tools/services/rest/', msa_tool, '/result/', job_id, "/fa"))
     aligned_sequences <- content(result_response, as = "text")
     
     return(aligned_sequences)
@@ -100,7 +109,7 @@ shinyServer(function(input, output, session) {
       fasta_data <- resp_body_string(response)  # Read as plain text
       all_fasta <- paste0(all_fasta, fasta_data, "\n")  # Append results
     }
-    cat('Retrieved ', str_count(all_fasta, '\n'), ' fasta sequences.\n')
+    cat('Retrieved ', str_count(all_fasta, '^>'), ' fasta sequences.\n')
     return(all_fasta)
   }
   
@@ -156,7 +165,7 @@ shinyServer(function(input, output, session) {
       stop("Error: Failed to submit query.")
     }
     job_id <- query_result$id
-    cat("Job submitted! ID:", job_id, "\n")
+    cat("Job submitted to foldseek server. ID:", job_id, "\n")
     
     # Step 4: Poll for job completion
     repeat {
@@ -329,14 +338,28 @@ shinyServer(function(input, output, session) {
       ids <- run_mmseqs('input_fasta.fasta')
     
       incProgress(message = "Getting sequences", amount = 0.6)
-        fasta_data <- get_fasta_from_uniprot(ids)
-        # if (success) {
-        writeLines(fasta_data, con = 'search_sequences.fasta')
-        write_file(paste0('>',input_id,'\n',input_seq,'\n'), 
-                   'search_sequences.fasta', 
-                   append = TRUE)
-        # } else { stop() }
+      tryCatch({
+        get_fasta_from_uniprot(ids)
+      }, error = function(e) {
+        showNotification(e$message)
+        cat(e$message, '\n')
+        return()
       })
+    })
+    
+    write_file(paste0('>', input_id, '\n', input_seq, 
+                      '\n', fasta_data),
+               file = 'search_sequences.fasta')
+    sendSweetAlert(
+      session = session,
+      html = TRUE,
+      title = "mmseqs results ready.",
+      text = tags$span(
+        "mmseqs has finished successfully", tags$br(),
+        "To analyse the sequences press the 'Run Analysis' button."
+      ), 
+      type = "info"
+    )
   })
   
   observeEvent(input$run_blast, {
@@ -367,7 +390,6 @@ shinyServer(function(input, output, session) {
     })
     
     blast_link <- paste0("https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=", rid)
-    browser()
     sendSweetAlert(
       session = session,
       html = TRUE,
@@ -390,17 +412,17 @@ shinyServer(function(input, output, session) {
       # Import Python modules
       sys <- import("sys")
       if (is.null(test())) {
-        print('no test, mafft')
+        print('no test, performing msa')
         
         if (input$mode != 'msa') {
           
           # run local
           # # mafft alignment script
-          # source_python("run_mafft.py")  
+          # source_python("run_msa.py")  
           # 
           # # Set up `sys.argv` for the script
           # sys_args <- c(
-          #   "run_mafft.py",
+          #   "run_msa.py",
           #   input_file
           # )
           # sys$argv <- sys_args
@@ -413,21 +435,29 @@ shinyServer(function(input, output, session) {
           # })
           
           # run online
-          msa_mafft <- run_mafft(input_file)
+          withProgress(message = paste0('Running ', input$msa_tool, ' alignment on server'), value = 0.15, {
+            msa_out <- run_msa(input_file, input$msa_tool)
+          })
           
-          writeLines(msa_mafft, 'initial_alignment.fasta')
+          if (is.null(msa_out)) {
+            return(NULL)
+          }
+          writeLines(msa_out, 'initial_alignment.fasta')
+          return('Success')
           
         } else {
-          print(paste('its an msa, so skipping mafft and using', input_file, 'as initial_alignment.fasta'))
+          print(paste('its an msa, so skipping ', input$msa_tool, ' and using', input_file, 'as initial_alignment.fasta'))
           file.copy(input_file, 'initial_alignment.fasta')
+          return('Success')
         }
       } else {
         print('its a test')
+        return('Success')
       }
     }, error = function(e) {
       results$log <- paste("Error:", e$message)
-      print(paste("Error running mafft python script. ", e$message), type = "error")
-      showNotification(paste("Error running mafft Python script. ", e$message), type = "error")
+      print(paste('Error running ', input$msa_tool, ': ', e$message), type = "error")
+      showNotification(paste('Error running ', input$msa_tool, ': ', e$message), type = "error")
     })
     
     tryCatch({
@@ -602,7 +632,10 @@ shinyServer(function(input, output, session) {
       file = 'search_sequences.fasta'
       # browser()
       print(paste('ref_name() is', ref_name()))
-      run_analysis(file, ref_name())
+      analysis_return <- run_analysis(file, ref_name())
+      if (is.null(analysis_return)) {
+        return()
+      }
     } else {
       print('file provided')
       if (input$mode == 'msa') {
