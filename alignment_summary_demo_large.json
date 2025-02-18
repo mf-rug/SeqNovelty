@@ -1,0 +1,634 @@
+{
+    "esmGFP": {
+        "matched_indices": [
+            417,
+            418,
+            559,
+            560,
+            706,
+            722,
+            853,
+            854,
+            855,
+            868,
+            947,
+            949,
+            951,
+            1035,
+            1105,
+            1106,
+            1173,
+            1175,
+            1209,
+            1463,
+            1476,
+            1561,
+            1566,
+            1651,
+            1783,
+            1784,
+            1819,
+            2170,
+            2174,
+            2303,
+            2304,
+            2327,
+            2370,
+            2371,
+            2376,
+            2447,
+            2457,
+            2459,
+            2536,
+            2664,
+            2665,
+            3268,
+            3480,
+            408,
+            412,
+            448,
+            450,
+            703,
+            705,
+            845,
+            1036,
+            1050,
+            1061,
+            1567,
+            1785,
+            1818,
+            2081,
+            2109,
+            2141,
+            2239,
+            2374,
+            2706,
+            2807,
+            3266,
+            407,
+            1174,
+            1509,
+            1554,
+            1555,
+            1565,
+            2051,
+            2105,
+            2142,
+            2173,
+            2543,
+            2544,
+            2545,
+            2763,
+            3481,
+            3482,
+            411,
+            827,
+            828,
+            829,
+            952,
+            1043,
+            1556,
+            2159,
+            2238,
+            2306,
+            2458,
+            2699,
+            2764,
+            3267,
+            449,
+            704,
+            724,
+            1475,
+            1820,
+            2079,
+            2108,
+            2171,
+            2240,
+            2449,
+            2495,
+            2547,
+            416,
+            847,
+            852,
+            1474,
+            1562,
+            1568,
+            1769,
+            2377,
+            2542,
+            3194,
+            702,
+            1037,
+            1038,
+            1055,
+            1183,
+            1477,
+            1510,
+            2080,
+            2326,
+            2448,
+            413,
+            414,
+            719,
+            950,
+            1108,
+            1771,
+            2369,
+            2375,
+            948,
+            1464,
+            1831,
+            2089,
+            2540,
+            2704,
+            3483,
+            3484,
+            1107,
+            1457,
+            1817,
+            2237,
+            2808,
+            3346,
+            55,
+            434,
+            830,
+            1461,
+            2052,
+            2305,
+            721,
+            1110,
+            1458,
+            2491,
+            2546,
+            2765,
+            1460,
+            2762,
+            2783,
+            3193,
+            3347,
+            410,
+            701,
+            1462,
+            1770,
+            2784,
+            406,
+            1042,
+            2232,
+            2492,
+            1039,
+            1604,
+            2805,
+            2806,
+            52,
+            53,
+            1456,
+            1768,
+            718,
+            2110,
+            2705,
+            1459,
+            2325,
+            2493,
+            843,
+            1060,
+            2539,
+            1104,
+            1821,
+            2785,
+            1182,
+            1210,
+            844,
+            2140,
+            415,
+            561,
+            720,
+            1041,
+            2175,
+            3215,
+            867,
+            2809,
+            2698,
+            1184,
+            54,
+            3216,
+            1603,
+            1109,
+            700,
+            2172,
+            2090,
+            409,
+            866,
+            2053,
+            1816,
+            1511,
+            856,
+            2176,
+            946,
+            846
+        ]
+    },
+    "A0A2H0LXQ1_9BACT Porin (Fragment) OS=Candidatus Omnitrophica bacterium CG11_big_fil_rev_8_21_14_0_20_42_13 OX=1974746 GN=COV72_04475 PE=4 SV=1": {
+        "matched_indices": [
+            417,
+            418,
+            559,
+            560,
+            706,
+            722,
+            853,
+            854,
+            855,
+            868,
+            947,
+            949,
+            951,
+            1035,
+            1105,
+            1106,
+            1173,
+            1175,
+            1209,
+            1463,
+            1476,
+            1561,
+            1566,
+            1651,
+            1783,
+            1784,
+            1819,
+            2170,
+            2174,
+            2303,
+            2304,
+            2327,
+            2370,
+            2371,
+            2376,
+            2447,
+            2457,
+            2459,
+            2536,
+            2664,
+            2665,
+            3268,
+            3480
+        ]
+    },
+    "A0A5C5TBR2_9HYPH Fimbrial biogenesis outer membrane usher protein OS=Reyranella sp. CPCC 100927 OX=2599616 GN=FQU96_15975 PE=4 SV=1": {
+        "matched_indices": [
+            408,
+            412,
+            448,
+            450,
+            703,
+            705,
+            845,
+            1036,
+            1050,
+            1061,
+            1567,
+            1785,
+            1818,
+            2081,
+            2109,
+            2141,
+            2239,
+            2374,
+            2706,
+            2807,
+            3266
+        ]
+    },
+    "A0A2N0WY71_9GAMM SPOR domain-containing protein OS=Psychromonas sp. psych-6C06 OX=2058089 GN=CW745_11085 PE=4 SV=1": {
+        "matched_indices": [
+            407,
+            1174,
+            1509,
+            1554,
+            1555,
+            1565,
+            2051,
+            2105,
+            2142,
+            2173,
+            2543,
+            2544,
+            2545,
+            2763,
+            3481,
+            3482
+        ]
+    },
+    "A0A454TLP1_9RALS Fimbrial biogenesis outer membrane usher protein OS=Ralstonia pseudosolanacearum OX=1310165 GN=EGA29_19800 PE=4 SV=1": {
+        "matched_indices": [
+            411,
+            827,
+            828,
+            829,
+            952,
+            1043,
+            1556,
+            2159,
+            2238,
+            2306,
+            2458,
+            2699,
+            2764,
+            3267
+        ]
+    },
+    "A0A7C8A7A7_UNCNT TonB-dependent receptor OS=Nitrospirota bacterium OX=2026887 GN=HPP56_01765 PE=3 SV=1": {
+        "matched_indices": [
+            449,
+            704,
+            724,
+            1475,
+            1820,
+            2079,
+            2108,
+            2171,
+            2240,
+            2449,
+            2495,
+            2547
+        ]
+    },
+    "A0A235BVY1_UNCW3 Uncharacterized protein OS=candidate division WOR-3 bacterium JGI_Cruoil_03_44_89 OX=1973748 GN=CH333_03575 PE=4 SV=1": {
+        "matched_indices": [
+            416,
+            847,
+            852,
+            1474,
+            1562,
+            1568,
+            1769,
+            2377,
+            2542,
+            3194
+        ]
+    },
+    "A0A3D4UEV6_9GAMM Porin OS=Moraxellaceae bacterium OX=1889775 GN=DF427_12530 PE=4 SV=1": {
+        "matched_indices": [
+            702,
+            1037,
+            1038,
+            1055,
+            1183,
+            1477,
+            1510,
+            2080,
+            2326,
+            2448
+        ]
+    },
+    "A0A074M486_ERYLO Carboxypeptidase regulatory-like domain-containing protein OS=Erythrobacter longus OX=1044 GN=EH31_12535 PE=4 SV=1": {
+        "matched_indices": [
+            413,
+            414,
+            719,
+            950,
+            1108,
+            1771,
+            2369,
+            2375
+        ]
+    },
+    "A0A6N6Z7H5_9BACT Putative salt-induced outer membrane protein OS=Puniceicoccaceae bacterium 5H OX=2508868 GN=E1N59_958 PE=4 SV=1": {
+        "matched_indices": [
+            948,
+            1464,
+            1831,
+            2089,
+            2540,
+            2704,
+            3483,
+            3484
+        ]
+    },
+    "A0A1J5DGX3_UNCXX Outer membrane protein beta-barrel domain-containing protein OS=bacterium CG2_30_54_10 OX=1805403 GN=AUK22_00935 PE=4 SV=1": {
+        "matched_indices": [
+            1107,
+            1457,
+            1817,
+            2237,
+            2808,
+            3346
+        ]
+    },
+    "A0A512ANN7_9SPHN SD-repeat containing protein B domain-containing protein OS=Novosphingobium sediminis OX=707214 GN=NSE01_31520 PE=4 SV=1": {
+        "matched_indices": [
+            55,
+            434,
+            830,
+            1461,
+            2052,
+            2305
+        ]
+    },
+    "A3YFE4_9GAMM A3YFE4 Uncharacterized protein OS=Marinomonas sp. MED121 OX=314277 GN=MED121_00745 PE=4 SV=1": {
+        "matched_indices": [
+            721,
+            1110,
+            1458,
+            2491,
+            2546,
+            2765
+        ]
+    },
+    "A0A0E9N2M7_9BACT Uncharacterized protein OS=Flavihumibacter petaseus NBRC 106054 OX=1220578 GN=FPE01S_03_01380 PE=4 SV=1": {
+        "matched_indices": [
+            1460,
+            2762,
+            2783,
+            3193,
+            3347
+        ]
+    },
+    "A0A7C4J2G5_UNCSP Omptin family outer membrane protease OS=Spirochaetota bacterium OX=2202144 GN=ENT14_07955 PE=4 SV=1": {
+        "matched_indices": [
+            410,
+            701,
+            1462,
+            1770,
+            2784
+        ]
+    },
+    "A0A1F9MJ94_9DELT PapC-like C-terminal domain-containing protein OS=Deltaproteobacteria bacterium RIFOXYD12_FULL_50_9 OX=1797902 GN=A2511_05700 PE=4 SV=1": {
+        "matched_indices": [
+            406,
+            1042,
+            2232,
+            2492
+        ]
+    },
+    "A0A359CVV8_9BACT Porin OS=Bacteroidales bacterium OX=2030927 GN=DEH02_07615 PE=4 SV=1": {
+        "matched_indices": [
+            1039,
+            1604,
+            2805,
+            2806
+        ]
+    },
+    "A0A7Z9N1J8_UNCNB Uncharacterized protein OS=Neomarinimicrobiota bacterium OX=2026760 GN=EYO24_03020 PE=4 SV=1": {
+        "matched_indices": [
+            52,
+            53,
+            1456,
+            1768
+        ]
+    },
+    "A0A1J4X4J0_9BACT Uncharacterized protein OS=Candidatus Marinimicrobia bacterium CG1_02_48_14 OX=1805240 GN=AUJ47_13125 PE=4 SV=1": {
+        "matched_indices": [
+            718,
+            2110,
+            2705
+        ]
+    },
+    "A0A2N0WX12_9GAMM Porin OS=Psychromonas sp. psych-6C06 OX=2058089 GN=CW745_14290 PE=4 SV=1": {
+        "matched_indices": [
+            1459,
+            2325,
+            2493
+        ]
+    },
+    "A0A5A8TX32_9GAMM Cadherin domain-containing protein (Fragment) OS=Candidatus Thioglobus sp OX=2026721 GN=FXV80_05885 PE=4 SV=1": {
+        "matched_indices": [
+            843,
+            1060,
+            2539
+        ]
+    },
+    "A0A7C9TSL5_9CYAN DUF481 domain-containing protein OS=Oscillatoria sp. SIO1A7 OX=2607767 GN=F6J93_01660 PE=4 SV=1": {
+        "matched_indices": [
+            1104,
+            1821,
+            2785
+        ]
+    },
+    "A0A136K7L1_9BACT Capsule assembly Wzi family protein OS=Nitrospira sp. OLB3 OX=1617410 GN=UZ03_NOB001000878 PE=4 SV=1": {
+        "matched_indices": [
+            1182,
+            1210
+        ]
+    },
+    "A0A2E2QBQ7_9BACT Carboxypeptidase regulatory-like domain-containing protein OS=Micavibrio sp OX=2024841 GN=CMH32_06930 PE=4 SV=1": {
+        "matched_indices": [
+            844,
+            2140
+        ]
+    },
+    "A0A357G0K0_9PROT Outer membrane protein beta-barrel domain-containing protein (Fragment) OS=Rhodospirillaceae bacterium OX=1898112 GN=DEA55_08635 PE=4 SV=1": {
+        "matched_indices": [
+            415,
+            561
+        ]
+    },
+    "A0A3M2AI15_UNCDE OmpA-like domain-containing protein OS=Deltaproteobacteria bacterium OX=2026735 GN=D6705_00330 PE=4 SV=1": {
+        "matched_indices": [
+            720,
+            1041
+        ]
+    },
+    "A0A437GW92_9SPHN Carbohydrate porin OS=Croceicoccus ponticola OX=2217664 GN=EKN06_09990 PE=3 SV=1": {
+        "matched_indices": [
+            2175,
+            3215
+        ]
+    },
+    "A0A7Y2NX09_9BACT Transporter OS=Gemmatimonadales bacterium OX=2448054 GN=HKM89_11605 PE=4 SV=1": {
+        "matched_indices": [
+            867,
+            2809
+        ]
+    },
+    "A0A081KE64_9GAMM Porin OS=Endozoicomonas elysicola OX=305900 GN=GV64_18430 PE=4 SV=1": {
+        "matched_indices": [
+            2698
+        ]
+    },
+    "A0A093WP94_9PROT Lipid A 3-O-deacylase OS=alpha proteobacterium QL1 OX=1502488 GN=FF85_02175 PE=4 SV=1": {
+        "matched_indices": [
+            1184
+        ]
+    },
+    "A0A0F5K5Z8_9BURK DUF481 domain-containing protein OS=Robbsia andropogonis OX=28092 GN=WM40_01375 PE=4 SV=1": {
+        "matched_indices": [
+            54
+        ]
+    },
+    "A0A0N0GNK2_9NEIS F1 capsule-anchoring protein OS=Amantichitinum ursilacus OX=857265 GN=caf1A PE=4 SV=1": {
+        "matched_indices": [
+            3216
+        ]
+    },
+    "A0A0T6A4T3_9BACT DUF3187 family protein OS=candidate division NC10 bacterium CSP1-5 OX=1640516 GN=XU15_C0007G0016 PE=4 SV=1": {
+        "matched_indices": [
+            1603
+        ]
+    },
+    "A0A1F5B1X2_9BACT Alginate export domain-containing protein OS=Candidatus Aminicenantes bacterium RBG_13_59_9 OX=1797268 GN=A2Y69_08090 PE=4 SV=1": {
+        "matched_indices": [
+            1109
+        ]
+    },
+    "A0A1J5F795_9HELI Porin OS=Helicobacteraceae bacterium CG2_30_36_10 OX=1805215 GN=AUK54_02770 PE=4 SV=1": {
+        "matched_indices": [
+            700
+        ]
+    },
+    "A0A1T2L8Q3_9GAMM SPOR domain-containing protein OS=Solemya pervernicosa gill symbiont OX=642797 GN=BOW53_03670 PE=4 SV=1": {
+        "matched_indices": [
+            2172
+        ]
+    },
+    "A0A1Y5HYC4_OLEAN TonB-dependent receptor plug domain-containing protein OS=Oleispira antarctica OX=188908 GN=A9R00_07845 PE=3 SV=1": {
+        "matched_indices": [
+            2090
+        ]
+    },
+    "A0A2A7U0V5_EDWTA Uncharacterized protein OS=Edwardsiella tarda OX=636 GN=CRM76_08985 PE=4 SV=1": {
+        "matched_indices": [
+            409
+        ]
+    },
+    "A0A2C9CUS6_9RHOB Porin OS=Monaibacterium marinum OX=1690039 GN=SAMN06273572_10728 PE=4 SV=1": {
+        "matched_indices": [
+            866
+        ]
+    },
+    "A0A2E6EQ01_9RICK Transporter OS=Rickettsiales bacterium OX=2026788 GN=CMP23_11455 PE=4 SV=1": {
+        "matched_indices": [
+            2053
+        ]
+    },
+    "A0A2S5EKK7_9BACT Haemolysin activator HlyB C-terminal domain-containing protein (Fragment) OS=Petrotoga halophila DSM 16923 OX=1122953 GN=AA81_00585 PE=4 SV=1": {
+        "matched_indices": [
+            1816
+        ]
+    },
+    "A0A3E0WWD9_9GAMM Carboxypeptidase regulatory-like domain-containing protein OS=Alkalilimnicola ehrlichii OX=351052 GN=CAL65_10915 PE=4 SV=1": {
+        "matched_indices": [
+            1511
+        ]
+    },
+    "A0A3N1UY53_9BACT Carbohydrate-selective porin (OprB family) OS=Desulfosoma caldarium OX=610254 GN=EDC27_1892 PE=3 SV=1": {
+        "matched_indices": [
+            856
+        ]
+    },
+    "A0A521SLG2_UNCNT Porin OS=Nitrospirota bacterium OX=2026887 GN=EPO39_05105 PE=4 SV=1": {
+        "matched_indices": [
+            2176
+        ]
+    },
+    "A0A7D7ZMF7_9GAMM Inverse autotransporter beta-domain domain-containing protein OS=Gammaproteobacteria bacterium OX=1913989 GN=GKR92_07305 PE=4 SV=1": {
+        "matched_indices": [
+            946
+        ]
+    },
+    "A0A7Y2XQF5_9BACT Uncharacterized protein OS=Akkermansiaceae bacterium OX=2562705 GN=HKP20_03800 PE=4 SV=1": {
+        "matched_indices": [
+            846
+        ]
+    }
+}

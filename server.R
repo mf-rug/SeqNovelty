@@ -50,7 +50,7 @@ shinyServer(function(input, output, session) {
                      ifelse(input$msa_tool == 'kalign', 1999, 499))
     
     fasta_content <- readLines(fasta_file)
-    browser()
+    # browser()
     
     nseqs <- sum(str_count(fasta_content, '^>'))
     if (nseqs > cutoff) {
@@ -444,10 +444,10 @@ shinyServer(function(input, output, session) {
   
   # Function to run the Python script and process results
   run_analysis <- function(input_file, ref_seq_id) {
-    if (is.null(ref_seq_id)) {
-      ref_seq_id <- 'esmGFP'
-      browser()
-    }
+    # if (is.null(ref_seq_id)) {
+    #   ref_seq_id <- 'esmGFP'
+    #   browser()
+    # }
     tryCatch({
       # Import Python modules
       sys <- import("sys")
@@ -518,7 +518,7 @@ shinyServer(function(input, output, session) {
             
             tryCatch({
               # pairwise alignment merge script
-              source_python("merge_pairwise2.py")  
+              source_python("merge_pairwise.py")  
               # Set up `sys.argv` for the script
               sys_args <- c(
                 'merge_pairwise2.py',
