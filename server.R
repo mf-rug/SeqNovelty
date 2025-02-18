@@ -45,8 +45,29 @@ shinyServer(function(input, output, session) {
 
   # Function to submit and retrieve MAFFT alignment
   run_msa <- function(fasta_file, msa_tool) {
-    # Read the FASTA file
+    cutoff <- ifelse(input$msa_tool == 'clustalo',
+                     3999,
+                     ifelse(input$msa_tool == 'kalign', 1999, 499))
+    
     fasta_content <- readLines(fasta_file)
+    browser()
+    
+    nseqs <- sum(str_count(fasta_content, '^>'))
+    if (nseqs > cutoff) {
+      showNotification(
+        paste0(
+          'This tool is limited to ',
+          cutoff,
+          ' sequences, removing ',
+          nseqs - cutoff,
+          ' sequences from analysis.'
+        )
+      )
+      Sys.sleep(4)
+    }
+    # Read the FASTA file
+    fasta_content <- fasta_content[1:which(str_detect(fasta_content, '^>'))[cutoff +1]-1]
+    
     fasta_content <- paste(fasta_content, collapse = '\n')
     
     # Step 1: Submit the job
@@ -335,6 +356,19 @@ shinyServer(function(input, output, session) {
     input_id <- input_parse[1]
     input_seq <- input_parse[2]
     
+    if (str_count(input_seq) > 400) {
+      sendSweetAlert(
+        session = session,
+        html = TRUE,
+        title = "mmseqs only supports up to 400 amino acids.",
+        text = tags$span(
+          "Please reduce length or run BLAST instead."
+        ), 
+        type = "error"
+      )
+      return()
+    }
+    
     write_file(input$seq_input, 'input_fasta.fasta')
     
     withProgress(message = "Running mmseqs", value = 0.15, {
@@ -342,22 +376,7 @@ shinyServer(function(input, output, session) {
     
       incProgress(message = "Getting sequences", amount = 0.6)
       tryCatch({
-        cutoff <- ifelse(input$msa_tool == 'clustalo',
-                         3999,
-                         ifelse(input$msa_tool == 'kalign', 1999, '499'))
-        if (length(ids) > cutoff) {
-          showNotification(
-            paste0(
-              'This tool is limited to ',
-              cutoff,
-              ' sequences, removing ',
-              length(ids) - cutoff,
-              ' sequences from analysis.'
-            )
-          )
-          Sys.sleep(4)
-        }
-        fasta_data <- get_fasta_from_uniprot(ids[1:500])
+        fasta_data <- get_fasta_from_uniprot(ids)
       }, error = function(e) {
         showNotification(e$message)
         cat(e$message, '\n')
@@ -425,14 +444,17 @@ shinyServer(function(input, output, session) {
   
   # Function to run the Python script and process results
   run_analysis <- function(input_file, ref_seq_id) {
-
+    if (is.null(ref_seq_id)) {
+      ref_seq_id <- 'esmGFP'
+      browser()
+    }
     tryCatch({
       # Import Python modules
       sys <- import("sys")
       if (is.null(test())) {
         print('no test, performing msa')
         
-        if (input$mode != 'msa') {
+        if (input$mode != 'msa' && input$align_mode == 'MSA') {
           
           # run local
           # # mafft alignment script
@@ -452,8 +474,8 @@ shinyServer(function(input, output, session) {
           #   })
           # })
           
-          # run online
-          withProgress(message = paste0('Running ', input$msa_tool, ' alignment on server'), value = 0.15, {
+          # run MSA online
+          withProgress(message = paste0('Running ', input$msa_tool, ' alignment on EBI server'), value = 0.15, {
             msa_out <- run_msa(input_file, input$msa_tool)
           })
           
@@ -465,8 +487,59 @@ shinyServer(function(input, output, session) {
           cat('Success')
 
         } else {
-          print(paste('its an msa, so skipping ', input$msa_tool, ' and using', input_file, 'as initial_alignment.fasta'))
-          file.copy(input_file, 'initial_alignment.fasta')
+          print(paste('its an msa / pairwise requested, so skipping ', input$msa_tool, ' and using', input_file, 'as initial_alignment.fasta'))
+          if (input$align_mode == 'MSA') {
+            file.copy(input_file, 'initial_alignment.fasta')
+          } else {
+            # perform all pairwise alignments
+            tryCatch({
+              # pairwise alignment script
+              source_python("run_pairwise_align.py")  
+              # Set up `sys.argv` for the script
+              sys_args <- c(
+                'run_pairwise_align.py',
+                input_file,
+                ref_seq_id,
+                input$ident_cutoff
+              )
+              sys$argv <- sys_args
+              cat('Running this command:\npython3', paste(sys_args, collapse = " "),'\n')
+              # Run the Python script
+              withProgress(message = "Running pairwise alignments", value = 0.22, {
+                capture.output({
+                  py$main()
+                })
+              })
+            }, error = function(e) {
+              results$log <- paste("Error:", e$message)
+              print(paste("Error running pairwise alignment script. ", e$message), type = "error")
+              showNotification(paste("Error running pairwise alignment script. ", e$message), type = "error")
+            })
+            
+            tryCatch({
+              # pairwise alignment merge script
+              source_python("merge_pairwise2.py")  
+              # Set up `sys.argv` for the script
+              sys_args <- c(
+                'merge_pairwise2.py',
+                'pairwise_alignments/',
+                'initial_alignment.fasta'
+              )
+              sys$argv <- sys_args
+              cat('Running this command:\npython3', paste(sys_args, collapse = " "),'\n')
+              # Run the Python script
+              withProgress(message = "Merging pairwise alignments", value = 0.3, {
+                capture.output({
+                  py$main()
+                })
+              })
+            }, error = function(e) {
+              results$log <- paste("Error:", e$message)
+              print(paste("Error merging pairwise alignments ", e$message), type = "error")
+              showNotification(paste("Error merging pairwise alignments ", e$message), type = "error")
+            })
+            
+          }
         }
       } else {
         print('its a test')
@@ -477,15 +550,29 @@ shinyServer(function(input, output, session) {
       showNotification(paste('Error running ', input$msa_tool, ': ', e$message), type = "error")
     })
     
+    if (!file.exists('initial_alignment.fasta')) {
+      sendSweetAlert(
+        session = session,
+        html = TRUE,
+        title = "No Matching Sequences Found!",
+        text = tags$span("Either your sequence is completely novel (congrats!) or you have to broaden the search criteria",
+                         tags$br(), "Consider using BLAST to search, and when using pairwise alignments, set the identity cutoff to a lower %."),
+        type = "info"
+      )
+      return()
+      }
+    
     tryCatch({
       if (is.null(test())) {
         print('no test seqnovelty')
+        print(ref_seq_id)
+
         # sequence analysis script
-        source_python("SeqNovelty.py")  
+        source_python("SeqNoveltyMin.py")  
         # Set up `sys.argv` for the script
         sys_args <- c(
-          "SeqNovelty.py",
-          input_file,
+          "SeqNoveltyMin.py",
+          'initial_alignment.fasta',
           ref_seq_id
         )
         sys$argv <- sys_args
@@ -510,14 +597,6 @@ shinyServer(function(input, output, session) {
       print('still the same')
       if (!is.null(test()) && test() == 'many') {
         print('still many')
-        # print(getwd())
-        # print(list.dirs(getwd()))
-        # print(list.files(getwd()))
-        # print(list.dirs(paste0(getwd(), '/SeqNovelty/')))
-        print(list.files(getwd()))
-        print(file.exists("final_alignment_demo.fasta"))
-        print(file.exists("./final_alignment_demo.fasta"))
-        # print(file.exists(paste0(getwd(), "/final_alignment_demo.fasta")))
         aligned_sequences <- readAAStringSet("final_alignment_demo.fasta")  # Adjust file name
         # print('done')
       } else if (!is.null(test()) && test() == 'many') {
@@ -897,7 +976,27 @@ shinyServer(function(input, output, session) {
     session$sendCustomMessage("scrollTableToColumn", ref_seq_start_col() -20)  # Adjust column index
   })
   
-  observeEvent(input$info, {
+  observeEvent(input$help, {
+    runjs(
+      '$("#mode").tooltip({title: "First choose the input mode. If you want the app to look for similar sequences for you choose <strong>search</strong> mode. If you have your own set of similar sequences, unaligned, select <strong>align</strong> mode. If you have your own MSA, select <strong>MSA</strong> mode.", 
+      placement: "right", html: true}).tooltip("show");'
+    )
+    if (input$mode == 'search') {
+      runjs(
+        '$("#seq_input").tooltip({title: "Enter a protein sequence to search. Either Fasta format with a >header on the first line and amino acid residues on subsequent lines, or sequence only.", 
+      placement: "right", html: true}).tooltip("show");'
+      )
+      runjs(
+        '$("#searchmode").tooltip({title: "Choose a search tool and adapt search parameters. For the most extensive search, choose BLAST and the nr database. For faster, less comprehensive search in more restricted database, you cab also choose mmseqs. Note that mmseqs may return sequences quite different from the input, occassionally resulting in unrealistic alignments.", 
+      placement: "right", html: true}).tooltip("show");'
+      )
+    }
+    runjs(
+      '$("#align_mode").tooltip({title: "Choose an alignment mode. In pairwise mode, each hit sequence is aligned separately to the target, in MSA mode, one multiple sequence alignment with target and all hits is generated. MSAs run externally on <a href=\'https://www.ebi.ac.uk/jdispatcher/msa\' target=\'_blank\'>EBI servers which imposes particular limits</a> but can sometimes give better alignments.", 
+      placement: "right", html: true}).tooltip("show");'
+    )
+  })
+  observeEvent(input$about, {
     sendSweetAlert(
       session = session,
       html = TRUE,

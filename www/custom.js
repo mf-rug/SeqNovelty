@@ -1,3 +1,9 @@
+// Remove tooltips upon click anywhere except the help button
+$(document).on('click', function(e) {
+  if (e.target.id !== 'help') {
+    $('.tooltip').remove();
+  }
+});
 // Listen for clicks on table cells
 $(document).on('click', '#alignment_table table.dataTable tbody td', function() {
     var table = $('#alignment_table table.dataTable').DataTable();

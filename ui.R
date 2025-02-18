@@ -44,8 +44,9 @@ shinyUI(page_navbar(
   use_shiny_title(),
   title = HTML("<strong><i>de novo</i> Sequence Novelty</strong>"),
   nav_spacer(), # push nav items to the right
-  nav_item(actionBttn('info', HTML('&nbsp help/info &nbsp'), color = 'royal', style = 'stretch', size = 'xs')),
-  nav_item(HTML('<span style="white-space: nowrap; font-size: 11px;">made by <a href ="https://bsky.app/profile/maxfus.bsky.social" target="_blank">Max Fürst</a></span>'), ),
+  nav_item(actionBttn('help', HTML('help'), color = 'royal', style = 'stretch', size = 'xs')),
+  nav_item(actionBttn('about', HTML('about'), color = 'royal', style = 'stretch', size = 'xs')),
+  nav_item(HTML('<span style="white-space: nowrap; font-size: 11px;">&nbsp made by <a href ="https://bsky.app/profile/maxfus.bsky.social" target="_blank">Max Fürst</a></span>'), ),
   nav_item(),
   nav_item(
     input_dark_mode(id = "dark_mode")
@@ -68,6 +69,8 @@ shinyUI(page_navbar(
         "seq_input",
         NULL,
         height = "15vh",
+#         value = '>esmGFP
+# MSKVEELIKPDMKMKLEMEGEVNGHKFSIEAEGEGKPYEGKQTIKAWSTTGKLPFAWDILSTSLTYGNRAFTKYPEGLEQHDFFKQSFPEGYSWERTITYEDGATVKVTADISLEDGVLINKVKFKGENFPSDGPVMQKKTTGWEASTELITPDPATGGLKGEVKMRLKLEGGGHLLADFKTTYRSKKKEKLPLPGVHYVDHRIVNEKATHPEGKEYMIQYEHAVARL',
         placeholder = "Paste single sequence (FASTA or seq only)"
       ), radioGroupButtons(
         'searchmode',
@@ -163,12 +166,29 @@ shinyUI(page_navbar(
       )
     ),
     HTML('<hr style="margin: 0px 0 10px; border-color: #656565; "/>'),
-    pickerInput(
-      inputId = "msa_tool",
-      label = HTML("MSA algorithm:&nbsp"), inline = TRUE,
-      choices = c("clustalo","kalign","mafft","muscle","muscle5","tcoffee"),
-      selected = 'mafft',
-      width = "fit"),
+    radioGroupButtons(
+      'align_mode',
+      NULL,
+      choices = c(
+        'pairwise',
+        "MSA"
+      ),
+      size = 's',
+      justified = TRUE
+    ),
+    conditionalPanel(
+      "input.align_mode=='MSA'",
+      pickerInput(
+        inputId = "msa_tool",
+        label = HTML("MSA algorithm:&nbsp"), inline = TRUE,
+        choices = c("clustalo","kalign","mafft","muscle","muscle5","tcoffee"),
+        selected = 'mafft',
+        width = "fit")
+    ),
+    conditionalPanel(
+      "input.align_mode=='pairwise'",
+      sliderInput('ident_cutoff', '% identity cutoff', 0, 100, 33)
+    ),
     HTML('<hr style="margin: 0px 0 15px; border-color: #656565; "/>'),
     actionButton("run_script", "Run Analysis"),
     actionButton("run_testm", "Demo Run"),

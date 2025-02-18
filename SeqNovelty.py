@@ -1,16 +1,10 @@
 from Bio import AlignIO
 from Bio.SeqIO import write
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
 import json
 import os
 import re
 import sys
 
-def run_mafft(input_fasta, output_fasta):
-    """Run MAFFT to perform MSA."""
-    command = f"mafft --quiet --auto {input_fasta} > {output_fasta}"
-    os.system(command)
 
 def calculate_identity(ref_seq, query_seq, usable_columns, percent=True):
     """Calculate % identity between ref_seq and query_seq for specified columns."""
@@ -48,7 +42,6 @@ def iterative_alignment(input_fasta, ref_seq_id, output_dir="."):
 
     # Run initial alignment
     initial_alignment = os.path.join(output_dir, "initial_alignment.fasta")
-    # run_mafft(input_fasta, initial_alignment)
 
     # Read alignment
     alignment = AlignIO.read(initial_alignment, "fasta")
