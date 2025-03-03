@@ -72,6 +72,9 @@ def create_pairwise_alignments(input_fasta, ref_seq_id, identity_threshold):
         # Calculate percent identity
         identity = calculate_identity(aligned_ref, aligned_query)
         
+        if identity == 100:
+            print(f"Found and exact match in {seq.id}! Will skip it.")
+            continue
         # Skip writing if identity is below the threshold
         if identity < identity_threshold:
             print(f"Skipping {seq.id} due to low identity: {identity:.2f}%")

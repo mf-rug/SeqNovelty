@@ -25,7 +25,7 @@ envs <- reticulate::virtualenv_list()
 if (!'venv_seqnovelty_shiny' %in% envs) {
   reticulate::virtualenv_create(
     envname = 'venv_seqnovelty_shiny',
-    # python = '/opt/homebrew/bin/python3'
+    python = '/opt/homebrew/bin/python3'
   )
   reticulate::virtualenv_install(
     'venv_seqnovelty_shiny',
@@ -57,10 +57,11 @@ shinyUI(page_navbar(
         'mode',
         NULL,
         choices = c(
-          `<i class='fa fa-search'></i><br>Search` = "search",
+          `<i class='fa fa-search'></i><br>search` = "search",
           `<i class='fa fa-align-left'></i><br>align` = "align",
-          `<i class='fa fa-align-justify'></i><br>MSA` = "msa"),
-        size = 'sm',
+          `<i class='fa fa-align-justify'></i><br>MSA` = "msa",
+          `<i class='fa fa-folder-open'></i><br>restore` = "restore"),
+      size = 'sm',
       justified = TRUE
     ),
     conditionalPanel(
@@ -118,7 +119,15 @@ shinyUI(page_navbar(
     conditionalPanel(
       "input.mode=='msa'", fileInput("fasta_file_msa", "Upload MSA .fasta file", accept = c(".fasta", ".fa"))
     ),
-      uiOutput("seq_id_dropdown"),  # Dynamically generated dropdown for sequence IDs
+    conditionalPanel(
+      "input.mode=='restore'", 
+      textAreaInput("restore_id", 
+                    "Paste the restore code", 
+                    placeholder = 'e.g. 0123456789aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ',
+                    height = "15vh"),
+      actionButton('restore_btn', 'Restore')
+    ),
+    uiOutput("seq_id_dropdown"),  # Dynamically generated dropdown for sequence IDs
     br(),
     tags$details(
       tags$summary(HTML("Visualization Settings<br><br>")),
@@ -165,41 +174,51 @@ shinyUI(page_navbar(
         HTML('</small')
       )
     ),
-    HTML('<hr style="margin: 0px 0 10px; border-color: #656565; "/>'),
-    radioGroupButtons(
-      'align_mode',
-      NULL,
-      choices = c(
-        'pairwise',
-        "MSA"
+    conditionalPanel(
+      "input.mode!='restore'",
+        HTML('<hr style="margin: 0px 0 10px; border-color: #656565; "/>'),
+        radioGroupButtons(
+          'align_mode',
+          NULL,
+          choices = c(
+            'pairwise',
+            "MSA"
+          ),
+          size = 's',
+          justified = TRUE
+        ),
+        conditionalPanel(
+          "input.align_mode=='MSA'",
+          pickerInput(
+            inputId = "msa_tool",
+            label = HTML("MSA algorithm:&nbsp"), inline = TRUE,
+            choices = c("clustalo","kalign","mafft","muscle","muscle5","tcoffee"),
+            selected = 'mafft',
+            width = "fit")
+        ),
+        conditionalPanel(
+          "input.align_mode=='pairwise'",
+          sliderInput('ident_cutoff', '% identity cutoff', 0, 100, 33)
+        ),
+        HTML('<hr style="margin: 0px 0 15px; border-color: #656565; "/>'),
+        actionButton("run_script", "Run Analysis"),
+        actionButton("run_testm", "Demo Run"),
+        # actionButton("run_testm", "Test Run M"),
+        # prettySwitch('rem_gaps', 'rem_gaps', value = TRUE, status = 'primary'),
       ),
-      size = 's',
-      justified = TRUE
-    ),
-    conditionalPanel(
-      "input.align_mode=='MSA'",
-      pickerInput(
-        inputId = "msa_tool",
-        label = HTML("MSA algorithm:&nbsp"), inline = TRUE,
-        choices = c("clustalo","kalign","mafft","muscle","muscle5","tcoffee"),
-        selected = 'mafft',
-        width = "fit")
-    ),
-    conditionalPanel(
-      "input.align_mode=='pairwise'",
-      sliderInput('ident_cutoff', '% identity cutoff', 0, 100, 33)
-    ),
-    HTML('<hr style="margin: 0px 0 15px; border-color: #656565; "/>'),
-    actionButton("run_script", "Run Analysis"),
-    actionButton("run_testm", "Demo Run"),
-    # actionButton("run_testm", "Test Run M"),
-    # prettySwitch('rem_gaps', 'rem_gaps', value = TRUE, status = 'primary'),
     width=3
     ),
     
     mainPanel(
-      div(id = 'hide_scroll', style="text-align:center;",
-          actionLink("xxx", NULL)
+      div(
+        style = "display: flex; justify-content: space-between; width: 100%;",
+        
+        div(id = 'hide_scroll',
+            actionButton("scroll", NULL, class='btn-jump')
+        ),
+        div(id = 'save_hide',
+            actionButton("save", 'save result', class='btn-jump')
+        )
       ),
       DT::dataTableOutput("alignment_table"),  # Render the output table here
       HTML('<hr style="margin: 0px 0 5px; border-color: #656565; "/>'),

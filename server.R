@@ -7,6 +7,7 @@ shinyServer(function(input, output, session) {
   test <- reactiveVal(NULL)
   ref_seq_start_col <- reactiveVal(NULL)
   structure <- reactiveVal('')
+  saveID <- reactiveVal(NULL)
   
   hl <- function(...) {
     paste0('<span style="color:', ifelse(input$dark_mode == 'dark', 'aqua', 'teal'), 
@@ -23,7 +24,7 @@ shinyServer(function(input, output, session) {
       input_seq <- str_remove_all(input_string, '\n| ')
     }
     if (str_detect(input_seq, '[^ACDEFGHIKLMNPQRSTVWYZ]')) {
-      # browser()
+      browser()
       stop('Invalid format / invalid characters in input seq')
     }
     
@@ -399,7 +400,20 @@ shinyServer(function(input, output, session) {
     )
   })
   
+  
+  observe({
+    if (!is.null(ref_name())) {
+      print('not null')
+    }
+  })
+  
   observeEvent(input$run_blast, {
+    ref_name(NULL)
+    results$alignment_table <- NULL
+    results$coverage_df <- NULL
+    results$seq_ids <- NULL
+    results$seq_ids <- NULL
+    print(paste('ref_name() and results now', ref_name()))
     input_parse <- parse_fasta_in(input$seq_input)
     input_id <- input_parse[1]
     input_seq <- input_parse[2]
@@ -448,6 +462,9 @@ shinyServer(function(input, output, session) {
     #   ref_seq_id <- 'esmGFP'
     #   browser()
     # }
+    updateActionButton(session, 'save', label = 'save result')
+    saveID(NULL)
+    
     tryCatch({
       # Import Python modules
       sys <- import("sys")
@@ -549,8 +566,7 @@ shinyServer(function(input, output, session) {
       print(paste('Error running ', input$msa_tool, ': ', e$message), type = "error")
       showNotification(paste('Error running ', input$msa_tool, ': ', e$message), type = "error")
     })
-    
-    if (!file.exists('initial_alignment.fasta')) {
+    if (is.null(test()) && !file.exists('initial_alignment.fasta')) {
       sendSweetAlert(
         session = session,
         html = TRUE,
@@ -617,6 +633,7 @@ shinyServer(function(input, output, session) {
       )
       
       # Store the table for rendering
+      print('filling results as part of run_analysis')
       results$alignment_table <- alignment_table
       
       # Read JSON for sequence information
@@ -753,6 +770,8 @@ shinyServer(function(input, output, session) {
   observeEvent(input$run_testm, {
     print('many')
     test('many')
+    updateTextAreaInput(session, 'seq_input', value = '>esmGFP
+MSKVEELIKPDMKMKLEMEGEVNGHKFSIEAEGEGKPYEGKQTIKAWSTTGKLPFAWDILSTSLTYGNRAFTKYPEGLEQHDFFKQSFPEGYSWERTITYEDGATVKVTADISLEDGVLINKVKFKGENFPSDGPVMQKKTTGWEASTELITPDPATGGLKGEVKMRLKLEGGGHLLADFKTTYRSKKKEKLPLPGVHYVDHRIVNEKATHPEGKEYMIQYEHAVARL')
     run_analysis("initial_alignment_demo.fasta", "esmGFP")
   })
   
@@ -776,7 +795,7 @@ shinyServer(function(input, output, session) {
   
   # Render the alignment table
   output$alignment_table <- DT::renderDataTable({
-    req(results$alignment_table, results$seq_info)
+    req(results$alignment_table, results$seq_info, results$seq_info[[ref_name()]])
     withProgress(message = "parsing df", value = 0.7, {
         
       # Make a new df object for modification
@@ -899,7 +918,7 @@ shinyServer(function(input, output, session) {
     })  
     # browser()
     # df$Sequence <- paste0('<a href="www.test.com" target="_blank">', df$Sequence, '</a>')
-    rownames(df) <- paste0('<a href="https://www.ncbi.nlm.nih.gov/protein/', rownames(df) ,'" target="_blank">', rownames(df), '</a>')
+    rownames(df)[-1] <- paste0('<a href="https://www.ncbi.nlm.nih.gov/protein/', rownames(df)[-1] ,'" target="_blank">', rownames(df)[-1], '</a>')
     
     df <- cbind('&nbsp', '&nbsp', df)
     df <- rbind(colnames(df), df)
@@ -919,7 +938,7 @@ shinyServer(function(input, output, session) {
                 ordering = FALSE, 
                 buttons = list('colvis'),  # Adds column visibility buttons
                 info = FALSE,
-                fixedColumns = list(leftColumns = 1),  # Fix the first column
+                fixedColumns = list(leftColumns = 3),  # Fix the first column
                 searching = FALSE,  # Disable search for simplicity
                 columnDefs = list(
                   # dom = 't',
@@ -964,16 +983,103 @@ shinyServer(function(input, output, session) {
   })
   
   observe({
-    if (!is.null(results$alignment_table) && is.data.frame(results$alignment_table)) {
+    if (!is.null(results$alignment_table) && is.data.frame(results$alignment_table) && !is.null(results$seq_info[[ref_name()]])) {
+      print('clearly, results are not null:')
+      print(dim(results$alignment_table))
       shinyjs::show('hide_scroll')
-      updateActionLink(session, 'xxx', label = HTML(paste0("<small><i>jump to <strong>", ref_name() ,"</strong> start</i></small>")))
+      shinyjs::show('save_hide')
+      updateActionButton(session, 'scroll', label = HTML(paste0("<small><i>jump to <strong>", ref_name() ,"</strong> start →</i></small>")))
     } else {
+      print('clearly, results are NULL:')
+      print(dim(results$alignment_table))
+      shinyjs::hide('save_hide')
       shinyjs::hide('hide_scroll')
     }
   })
-  observeEvent(input$xxx,{
+  observeEvent(input$scroll,{
     print(ref_seq_start_col() -20)
     session$sendCustomMessage("scrollTableToColumn", ref_seq_start_col() -20)  # Adjust column index
+  })
+  
+  save_btn <- function(id) {
+    tags$div(tags$span(
+      'To retrieve the result later, use this code in the \'restore\' mode: ',
+      
+      tags$div(class = "code-box",
+               tags$button(id = "copy-btn", class = "copy-btn", onclick="copyToClipboard()", "Copy"),
+               tags$code(id="code-text", id)
+      ), 
+      
+      
+      # JavaScript function to copy text
+      tags$script(HTML('
+        function copyToClipboard() {
+            var codeText = document.getElementById("code-text").innerText;
+            var copyButton = document.getElementById("copy-btn");
+            
+            navigator.clipboard.writeText(codeText).then(() => {
+                copyButton.innerText = "Copied!";
+                copyButton.style.backgroundColor = "#28a745"; // Green color
+                setTimeout(() => {
+                    copyButton.innerText = "Copy";
+                    copyButton.style.backgroundColor = "#007bff"; // Reset color
+                }, 2000);
+            }).catch(err => {
+                console.error("Failed to copy: ", err);
+            });
+        }
+    '))
+    ))
+  }
+  
+  observe({
+    if (input$restore_id != '') {
+      shinyjs::enable('restore_btn')
+    } else {
+      shinyjs::disable('restore_btn')
+    }
+  })
+  
+  observeEvent(input$restore_btn, {
+    # Load it back
+    if (file.exists(paste0(input$restore_id, ".rds"))) {
+      import_data <- readRDS("my_data.rds")
+      import_results <- import_data[[1]]
+      ref_name(import_data[[2]])
+      print('filling results with restore')
+      results$alignment_table <- import_results$alignment_table
+      results$coverage_df <- import_results$coverage_df
+      results$seq_info <- import_results$seq_info
+      results$seq_ids <- import_results$seq_ids
+      updateActionButton(session, 'save', label = 'result saved')
+      saveID(input$restore_id)
+    } else {
+      sendSweetAlert(session, title = 'Not found!', text = 'This code is not recognized.')
+    }
+    })
+    
+  observeEvent(input$save, {
+    if (is.null(saveID())) {
+      id <- paste0(sample(c(LETTERS, letters, 0:9,0:9)), collapse = '')
+      saveID(id)
+      sendSweetAlert(
+        title ="Results saved!",
+        html = TRUE,
+        text = save_btn(id)
+      )
+      updateActionButton(session, 'save', label = 'result saved')
+      
+      #save logic
+      # Save an object
+      saveRDS(list(results, ref_name()), file = paste0(id, ".rds"))
+
+    } else {
+      sendSweetAlert(
+        title = NULL,
+        html = TRUE,
+        text = save_btn(saveID())
+      )
+    }
   })
   
   observeEvent(input$help, {
@@ -1011,10 +1117,10 @@ shinyServer(function(input, output, session) {
   
   # Plot cumulative coverage
   output$cum_coverage <- renderPlot({
-    req(results$coverage_df)
+    req(results$alignment_table, results$seq_info, results$seq_info[[ref_name()]])
     df <- results$coverage_df
     dark <- input$dark_mode == 'dark'
-    
+
     ref_seq <- results$alignment_table[ref_name(), -1]
     ref_len <- length(ref_seq[!str_detect(ref_seq, '-')])
     match_len <- length(results$seq_info[[ref_name()]]$matched_indices)
@@ -1035,7 +1141,8 @@ shinyServer(function(input, output, session) {
     p1 <- ggplot(df, aes(x = Sequence, y = CumulativeCoverage)) +
       geom_hline(yintercept = max(df$CumulativeCoverage), linetype = 2, color='#58aebf', linewidth= 1) +
       geom_line(group = 1, color = ifelse(dark, '#d9d1ff', "#0f0059"), linewidth=1.5) +
-      geom_point(color = "#6f51ff", size=4) +
+      geom_point(data = df[-1,], color = "#6f51ff", size=10.5) +
+      geom_text(data = df[-1,], aes(y = CumulativeCoverage, label = round(CumulativeCoverage,1)), color = "white", size=4) +
       # geom_text(x= df$Sequence[length(df$Sequence)], 
       #           y=max(df$CumulativeCoverage), 
       #           color= '#58aebf',
@@ -1067,7 +1174,7 @@ shinyServer(function(input, output, session) {
   
   
   output$novelty_media <- renderUI({
-    req(results$coverage_df)
+    req(results$alignment_table, results$seq_info, results$seq_info[[ref_name()]])
     ref_seq <- results$alignment_table[ref_name(), -1]
     sequence <- paste0(ref_seq, collapse = '') %>% str_remove_all(., '-')
     if (str_count(sequence) <= 400) {
@@ -1097,7 +1204,7 @@ shinyServer(function(input, output, session) {
   })
   
   output$novelty_text <- renderUI({
-    req(results$coverage_df)
+    req(results$alignment_table, results$seq_info, results$seq_info[[ref_name()]])
     ref_seq <- results$alignment_table[ref_name(), -1]
     ref_len <- length(ref_seq[!str_detect(ref_seq, '-')])
     match_len <- length(results$seq_info[[ref_name()]]$matched_indices)
@@ -1116,11 +1223,11 @@ shinyServer(function(input, output, session) {
   
   
   output$res_analysis <- renderUI({
-    req(results$alignment_table)
-
+    req(results$alignment_table, results$seq_info, results$seq_info[[ref_name()]])
+    
     selrow <- input$row_selected
     selcol <- input$col_selected -2 # correct indexing and first col is name
-    
+
     df <- results$alignment_table
     non_gap_columns <- !apply(df, 2, function(x) all(str_detect(x, '-')))
     
@@ -1131,38 +1238,60 @@ shinyServer(function(input, output, session) {
     if (is.null(selrow) || length(df$Name[selrow]) == 0) {
       info <- '<i>Select a residue for more info.</i>'
     } else {
-      other_seqs_res <- df[-selrow, selcol + 1]
-      num_identical <- length(which(other_seqs_res %in% df[selrow, -1][selcol]))
-      perc_identical <- round(num_identical / length(other_seqs_res) * 100,1)
-      info <- paste0(
-        "Selected: ",
-        ifelse(df$Name[selrow] == ref_name(), "analysed sequence ", "hit sequence "),
-        df$Name[selrow],
-        '<br>Residue ',
-        hl(df[selrow, -1][selcol]),
-        ' found in ',
-        hl(
-          num_identical,
-          ' / ',
-          length(other_seqs_res),
-          ' (',
-          perc_identical,
-          '%)'
-        ),
-        ' of natural, aligned sequences',
-        ifelse(df$Name[selrow] == ref_name(), 
-               ifelse(
-                 perc_identical == 0,
-                 paste0('<br>→ <span style="color:green;"> novel',
-                        ifelse(all(other_seqs_res == '-'), 
-                               ' insertion', 
-                               ifelse(df[selrow, -1][selcol] == '-' && all(other_seqs_res != '-'), 
-                                      ' deletion', 
-                                      ' mutation'))),
-                 '<br>→ <span style="color:red;">not novel'
-               ), '')
-      )
-    }
+      if (selcol < 1) {
+        info <- paste0(
+          "Selected: ",
+          ifelse(df$Name[selrow] == ref_name(), "analysed sequence ", "hit sequence "),
+          tags$strong(df$Name[selrow])
+        )
+      } else {
+        selseq <- df[selrow, -1]
+        selres <- selseq[selcol]
+        other_seqs_res <- df[-selrow, selcol + 1]
+        num_identical <- length(which(other_seqs_res %in% selres))
+        perc_identical <- round(num_identical / length(other_seqs_res) * 100,1)
+        
+        # browser()
+        if (selres != '-') {
+          selected_col_name <- names(selres)
+          match_index <- which(names(selseq) == selected_col_name)
+          non_gap_indices <- which(selseq != "-")
+          selected_non_gap <- which(non_gap_indices == match_index)
+          selection_str <- paste0(', residue ', tags$strong(selected_non_gap))
+        } else {
+          selection_str <- ''
+        }
+        info <- paste0(
+          "Selected: ",
+          ifelse(df$Name[selrow] == ref_name(), "analysed sequence ", "hit sequence "),
+          tags$strong(df$Name[selrow]),
+          selection_str,
+          '<br>Selected ',
+          ifelse(selres == '-', 'gap', paste0('amino acid ', hl(selres))),
+          ', found in ',
+          hl(
+            num_identical,
+            ' / ',
+            length(other_seqs_res),
+            ' (',
+            perc_identical,
+            '%)'
+          ),
+          ' of aligned sequences',
+          ifelse(df$Name[selrow] == ref_name(), 
+                 ifelse(
+                   perc_identical == 0,
+                   paste0('<br>→ <span style="color:green;"> novel',
+                          ifelse(all(other_seqs_res == '-'), 
+                                 ' insertion', 
+                                 ifelse(selres == '-' && all(other_seqs_res != '-'), 
+                                        ' deletion', 
+                                        ' mutation'))),
+                   '<br>→ <span style="color:red;">not novel'
+                 ), '')
+        )
+        }
+      }
     
     renderUI(HTML(
       paste0('<div class="error_out" style="height:100%;">', info, '</div>')

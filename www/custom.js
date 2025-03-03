@@ -20,11 +20,12 @@ $(document).on('click', '#alignment_table table.dataTable tbody td', function() 
     });
 
     // Remove previous row highlights
-    $('#alignment_table table.dataTable tbody tr td').removeClass('selected-row');
+    $('#alignment_table table.dataTable tbody tr td').removeClass('selected-row').css('font-weight', '');;
 
     // Highlight the clicked row
     var rowElement = $(this).closest('tr');
-    rowElement.find('td').addClass('selected-row');
+    rowElement.find('td:gt(2)').addClass('selected-row');
+    rowElement.find('td:first-child').css('font-weight', 'bold');
 
     // Remove previous cell border
     $('#alignment_table table.dataTable tbody td').removeClass('selected-cell');

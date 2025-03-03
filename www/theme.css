@@ -21,7 +21,7 @@
     }
 
     /* Hover effect for table cells */
-    #alignment_table table.dataTable tbody tr:not(:first-child) td:not(:nth-child(1)):hover {
+    #alignment_table table.dataTable tbody tr:not(:first-child) td:not(:nth-child(1)):not(:nth-child(2)):not(:nth-child(3)):hover {
         box-shadow: #de00c6 0px 0px 1px 1px inset !important;
         cursor: crosshair;
     }
@@ -77,6 +77,11 @@
         margin-left: 3px;
     }
 
+    .btn-jump {
+        margin: 3px;
+        padding: 0px 10px 0px 10px !important;
+    }
+    
     /* Dark theme button styling */
     [data-bs-theme='dark'] .btn-default {
         --bs-btn-bg: #0e495a !important;
@@ -168,4 +173,52 @@
     #seq_input {
         padding: 6px !important;
         font-size: 13px !important;
+    }
+
+    #restore_id {
+        padding: 6px !important;
+        font-size: 13px !important;
+    }
+
+    .code-box {
+        position: relative !important;
+        background-color: #f4f4f4 !important;
+        border: 1px solid #ccc !important;
+        border-radius: 5px !important;
+        padding: 10px !important;
+        font-family: monospace !important;
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+        overflow-x: auto !important;
+        min-height: 50px !important;
+        display: inline-block !important;
+        color: black !important;
+    }
+
+    /* Force override Bootstrap styles for <code> inside .code-box */
+    .code-box code {
+        font-family: monospace !important;
+        color: black !important;
+        background: none !important;
+        padding: 0 !important;
+        border: none !important;
+        font-size: inherit !important;
+    }
+
+    .copy-btn {
+        position: absolute !important;
+        top: 5px !important;
+        right: 5px !important;
+        background: #007bff !important;
+        color: white !important;
+        border: none !important;
+        padding: 5px 10px !important;
+        font-size: 12px !important;
+        cursor: pointer !important;
+        border-radius: 3px !important;
+        transition: background-color 0.3s ease !important;
+    }
+
+    .copy-btn:hover {
+        background: #0056b3 !important;
     }
