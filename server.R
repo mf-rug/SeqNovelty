@@ -347,7 +347,14 @@ shinyServer(function(input, output, session) {
       
       # Check for successful response
       if (status_code(response) != 200) {
-        stop("Failed to fetch sequences for chunk. HTTP status code: ", status_code(response))
+        print("Failed to fetch sequences for chunk. HTTP status code: ", status_code(response))
+        
+        # try once more
+        response <- GET(query_url)
+        if (status_code(response) != 200) {
+          print("Again failed to fetch sequences for chunk. HTTP status code: ", status_code(response), "skipping chunk")
+          next
+        }
       }
       
       # Append the fetched FASTA data to the merged result
@@ -486,7 +493,7 @@ shinyServer(function(input, output, session) {
       # Import Python modules
       sys <- import("sys")
       if (is.null(test())) {
-        print('no test, performing msa')
+        # print('no test, performing msa')
         
         if (input$mode != 'msa' && input$align_mode == 'MSA') {
           
@@ -576,7 +583,7 @@ shinyServer(function(input, output, session) {
           }
         }
       } else {
-        print('its a test')
+        print('its a demo')
       }
     }, error = function(e) {
       results$log <- paste("Error:", e$message)
@@ -597,7 +604,7 @@ shinyServer(function(input, output, session) {
     
     tryCatch({
       if (is.null(test())) {
-        print('no test seqnovelty')
+        # print('no test seqnovelty')
         print(ref_seq_id)
 
         # sequence analysis script
@@ -1001,14 +1008,14 @@ MSKVEELIKPDMKMKLEMEGEVNGHKFSIEAEGEGKPYEGKQTIKAWSTTGKLPFAWDILSTSLTYGNRAFTKYPEGLEQ
   
   observe({
     if (!is.null(results$alignment_table) && is.data.frame(results$alignment_table) && !is.null(results$seq_info[[ref_name()]])) {
-      print('clearly, results are not null:')
-      print(dim(results$alignment_table))
+      # print('clearly, results are not null:')
+      # print(dim(results$alignment_table))
       shinyjs::show('hide_scroll')
       shinyjs::show('save_hide')
       updateActionButton(session, 'scroll', label = HTML(paste0("<small><i>jump to <strong>", ref_name() ,"</strong> start →</i></small>")))
     } else {
-      print('clearly, results are NULL:')
-      print(dim(results$alignment_table))
+      # print('clearly, results are NULL:')
+      # print(dim(results$alignment_table))
       shinyjs::hide('save_hide')
       shinyjs::hide('hide_scroll')
     }
@@ -1060,7 +1067,7 @@ MSKVEELIKPDMKMKLEMEGEVNGHKFSIEAEGEGKPYEGKQTIKAWSTTGKLPFAWDILSTSLTYGNRAFTKYPEGLEQ
   observeEvent(input$restore_btn, {
     # Load it back
     if (file.exists(paste0(input$restore_id, ".rds"))) {
-      import_data <- readRDS("my_data.rds")
+      import_data <- readRDS(paste0(input$restore_id, ".rds"))
       import_results <- import_data[[1]]
       ref_name(import_data[[2]])
       print('filling results with restore')
