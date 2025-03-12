@@ -4,6 +4,12 @@ $(document).on('click', function(e) {
     $('.tooltip').remove();
   }
 });
+// HTML in withprogress
+Shiny.addCustomMessageHandler('updateProgressDetail', function(message) {
+      console.log('Received updateProgressDetail:', message); // Debugging
+      $('.shiny-notification .progress-detail').html(message); // Corrected selector
+    });
+
 // Listen for clicks on table cells
 $(document).on('click', '#alignment_table table.dataTable tbody td', function() {
     var table = $('#alignment_table table.dataTable').DataTable();

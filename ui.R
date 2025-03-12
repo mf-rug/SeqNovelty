@@ -24,8 +24,8 @@ options(reticulate.output_handler = function(x) cat(x, "\n"))
 envs <- reticulate::virtualenv_list()
 if (!'venv_seqnovelty_shiny' %in% envs) {
   reticulate::virtualenv_create(
-    envname = 'venv_seqnovelty_shiny',
-    python = '/opt/homebrew/bin/python3'
+    envname = 'venv_seqnovelty_shiny'#,
+    # python = '/opt/homebrew/bin/python3'
   )
   reticulate::virtualenv_install(
     'venv_seqnovelty_shiny',

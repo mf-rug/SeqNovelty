@@ -24,8 +24,18 @@ shinyServer(function(input, output, session) {
       input_seq <- str_remove_all(input_string, '\n| ')
     }
     if (str_detect(input_seq, '[^ACDEFGHIKLMNPQRSTVWYZ]')) {
-      browser()
-      stop('Invalid format / invalid characters in input seq')
+      cat('Invalid format / invalid characters in input seq:', input_seq, '\n')
+      sendSweetAlert(
+        session = session,
+        html = TRUE,
+        title = "Input error",
+        text = tags$span(
+          "Your input sequence contains invalid characters."
+        ), 
+        type = "error"
+      )
+      # browser()
+      return(NULL)
     }
     
     ref_name(input_id)
@@ -254,7 +264,12 @@ shinyServer(function(input, output, session) {
     
     # Step 2: Poll for results
     for (i in 1:30) {
-      incProgress(0.01, message = 'BLAST running', detail = paste0('https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=', rid))
+      incProgress(0.01, message = 'BLAST running') #, detail = paste0('https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=', rid))
+      url <- paste0('https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=', rid)
+      session$sendCustomMessage(
+        "updateProgressDetail",
+        paste0('<a href="', url, '" target="_blank">', url, ' &nbsp <i class="fas fa-external-link-alt"></i></a>')
+      )
       Sys.sleep(30) # Wait 30 seconds before checking
       status_response <- GET(base_url, query = list(CMD = "Get", RID = rid, FORMAT_TYPE = "JSON2_S"))
       status_text <- content(status_response, as = "text")
@@ -317,12 +332,12 @@ shinyServer(function(input, output, session) {
     for (chunk in id_chunks) {
       print(paste('fetching chunk'))
       # Create a comma-separated string of IDs for the current chunk
-      seqs <- paste(chunk, collapse = ",")
+      seqs <- paste(chunk[[1]], collapse = ",")
       
       # Construct the URL for the current chunk
       query_url <- modify_url(base_url, query = list(
         db = "protein",
-        id = seqs,
+        id = paste0(seqs, collapse = ''),
         rettype = "fasta",
         retmode = "text"
       ))
@@ -354,6 +369,7 @@ shinyServer(function(input, output, session) {
   
   observeEvent(input$run_mmseqs, {
     input_parse <- parse_fasta_in(input$seq_input)
+    req(input_parse)
     input_id <- input_parse[1]
     input_seq <- input_parse[2]
     
@@ -415,6 +431,7 @@ shinyServer(function(input, output, session) {
     results$seq_ids <- NULL
     print(paste('ref_name() and results now', ref_name()))
     input_parse <- parse_fasta_in(input$seq_input)
+    req(input_parse)
     input_id <- input_parse[1]
     input_seq <- input_parse[2]
     
