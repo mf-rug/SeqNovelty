@@ -347,18 +347,20 @@ shinyServer(function(input, output, session) {
       
       # Check for successful response
       if (status_code(response) != 200) {
-        print("Failed to fetch sequences for chunk. HTTP status code: ", status_code(response))
+        cat("Failed to fetch sequences for chunk. HTTP status code: ", status_code(response), '\n')
         
         # try once more
+        Sys.sleep(5)
         response <- GET(query_url)
         if (status_code(response) != 200) {
-          print("Again failed to fetch sequences for chunk. HTTP status code: ", status_code(response), "skipping chunk")
+          cat("Failed to fetch sequences for chunk. HTTP status code: ", status_code(response), '\n')
           next
         }
       }
       
       # Append the fetched FASTA data to the merged result
       all_fasta <- paste0(all_fasta, content(response, as = "text", encoding = "UTF-8"))
+      Sys.sleep(2)
     }
     
     return(all_fasta)
@@ -416,7 +418,7 @@ shinyServer(function(input, output, session) {
       html = TRUE,
       title = "mmseqs results ready.",
       text = tags$span(
-        "mmseqs has finished successfully", tags$br(),
+        "mmseqs has finished successfully, ", length(ids), " sequences were found.", tags$br(),
         "To analyse the sequences press the 'Run Analysis' button."
       ), 
       type = "info"
@@ -470,7 +472,7 @@ shinyServer(function(input, output, session) {
       html = TRUE,
       title = "BLAST ready.",
       text = tags$span(
-        "Blast has finished successfully. You can look at the results under ",
+        "Blast finished successfully, ", length(ids), " sequences found. You can look at the results under ",
         tags$a(href = blast_link, target='_blank', blast_link), tags$br(), tags$br(),
         "To analyse the sequences press the 'Run Analysis' button."
       ), 
