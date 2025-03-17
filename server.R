@@ -17,7 +17,7 @@ shinyServer(function(input, output, session) {
   parse_fasta_in <- function(input_string) {
     if (str_detect(input_string, '^>')) {
       input_id <- str_extract(input_string, '(?<=>).*(?=\n)') 
-      input_seq <- str_remove(input_string, input_id) %>% str_remove_all(., '^>|\n| ')
+      input_seq <- str_remove(input_string, fixed(input_id)) %>% str_remove_all(., '^>|\n| ')
       input_id <- input_id %>% str_replace_all(., ' ', '_')
     } else {
       input_id <- 'UnknownInput'
