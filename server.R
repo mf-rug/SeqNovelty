@@ -461,10 +461,11 @@ shinyServer(function(input, output, session) {
       sstop(session, TRUE, 'Error', 'https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=', 'error')
       return()
     }
+    base_url <- "https://blast.ncbi.nlm.nih.gov/Blast.cgi"
     rid <- str_remove(input$seq_input, fixed('https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=')) %>% str_remove(., fixed('%20'))
     print(rid)
     response <- GET(
-      url = blast_url,
+      url = base_url,
       query = list(
         CMD = "Get",
         RID = rid,
