@@ -1384,7 +1384,7 @@ MSKVEELIKPDMKMKLEMEGEVNGHKFSIEAEGEGKPYEGKQTIKAWSTTGKLPFAWDILSTSLTYGNRAFTKYPEGLEQ
     if (str_count(sequence) <= 400) {
       # Call esmfold API
       response <- POST("https://api.esmatlas.com/foldSequence/v1/pdb/",
-                       body = sequence, encode = "raw")
+                       body = sequence, encode = "raw", timeout(60), progress())
       if (status_code(response) == 200) {
         print('success! got a response from esm server')
         pdb_result <- content(response, "text")
@@ -1400,7 +1400,7 @@ MSKVEELIKPDMKMKLEMEGEVNGHKFSIEAEGEGKPYEGKQTIKAWSTTGKLPFAWDILSTSLTYGNRAFTKYPEGLEQ
         structure(pdb_file)
 
       } else {
-        print('oh no something went wrong with esmfold!')
+        cat('oh no something went wrong with esmfold!:', status_code(response), '\n')
         output$molView <- renderText("Error fetching structure.")
       }
     } else {
