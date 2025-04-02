@@ -304,7 +304,12 @@ shinyServer(function(input, output, session) {
         # browser()
       }
     }
-    stop("BLAST job did not complete in time.")
+    sstop(session, TRUE, "Error in Blast", 
+          text = tags$span(
+            "BLAST job did not complete in time. You might want to run",  
+            tags$a(href = 'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE=Proteins', target='_blank', 'BLAST'),
+            'manually and paste the resulting link in here instead.'),
+          'error')
   }
   
   extract_blast_ids <- function(json_file, single_id=TRUE) {
@@ -380,8 +385,10 @@ shinyServer(function(input, output, session) {
   observe({
     if (input$seq_input == '') {
       shinyjs::disable('run_blast') 
+      shinyjs::disable('load_blast') 
     } else {
       shinyjs::enable('run_blast')
+      shinyjs::enable('load_blast')
     }
   })
   
@@ -440,6 +447,73 @@ shinyServer(function(input, output, session) {
     if (!is.null(ref_name())) {
       print('not null')
     }
+  })
+  
+  
+  observeEvent(input$load_blast, {
+    ref_name(NULL)
+    results$alignment_table <- NULL
+    results$coverage_df <- NULL
+    results$seq_ids <- NULL
+    results$seq_ids <- NULL
+    print(paste('ref_name() and results now', ref_name()))
+    if (!startsWith(input$seq_input, 'https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=')) {
+      sstop(session, TRUE, 'Error', 'https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=', 'error')
+      return()
+    }
+    rid <- str_remove(input$seq_input, fixed('https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=')) %>% str_remove(., fixed('%20'))
+    print(rid)
+    response <- GET(
+      url = blast_url,
+      query = list(
+        CMD = "Get",
+        RID = rid,
+        FORMAT_TYPE = "JSON2_S",          # Options: JSON2, XML, Text
+        FORMAT_OBJECT = "Alignment"   # Retrieve alignments
+      )
+    )
+    
+    if (status_code(response) != 200 ) {
+      sstop(session, TRUE, 'Error', paste("Failed to fetch BLAST result. Status: ", status_code(response)), 'error')
+      return()
+    } else {
+      if (str_detect(content(response, 'text'), 'Error: Problems retrieving results for RID')) {
+        sstop(session, TRUE, 'Error', paste("Failed to fetch BLAST result. Problems retrieving results for RID"), 'error')
+        return()
+      }
+      else {
+        blast_out <- content(response, "text")
+      }
+    }
+    
+
+    withProgress(message = "Processing BLAST", value = 0.6, {
+      write_file(blast_out, 'blast_out.blast')
+      ids <- extract_blast_ids('blast_out.blast', single_id=TRUE)
+    })
+
+    withProgress(message = "Getting sequences", value = 0.7, {
+      fasta_data <- fetch_sequences(ids)
+      # if (success) {
+      writeLines(fasta_data, con = 'search_sequences.fasta')
+      write_file(paste0('>',input_id,'\n',input_seq,'\n'), 
+                 'search_sequences.fasta', 
+                 append = TRUE)
+      # } else { stop() }
+    })
+    
+    blast_link <- paste0("https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=", rid)
+    sendSweetAlert(
+      session = session,
+      html = TRUE,
+      title = "BLAST ready.",
+      text = tags$span(
+        "Blast finished successfully, ", length(ids), " sequences found. You can look at the results under ",
+        tags$a(href = blast_link, target='_blank', blast_link), tags$br(), tags$br(),
+        "To analyse the sequences press the 'Run Analysis' button."
+      ), 
+      type = "info"
+    )
   })
   
   observeEvent(input$run_blast, {
@@ -1146,7 +1220,9 @@ MSKVEELIKPDMKMKLEMEGEVNGHKFSIEAEGEGKPYEGKQTIKAWSTTGKLPFAWDILSTSLTYGNRAFTKYPEGLEQ
       text = tags$span(style="text-align:left", "This app determines the novelty of a given protein sequence by aligning it to homologs and reporting identical residues.",
                        tags$br(),tags$br(),"In Search mode, the app will find sequences from the selected database for you.",
                        tags$br(),tags$br(),"In align mode, the app will align and only use the sequences provided in the input.",
-                       tags$br(),tags$br(),"In MSA mode, the app will use a provided MSA and only perform the analysis."),
+                       tags$br(),tags$br(),"In MSA mode, the app will use a provided MSA and only perform the analysis.",
+                       tags$br(),tags$br(), "Bugs? Problems? Requests?", tags$a(href = 'https://github.com/mf-rug/SeqNovelty/issues', target='_blank', 'Raise an issue on Github!')
+                       ),
       type = "info"
     )
   })
@@ -1216,7 +1292,6 @@ MSKVEELIKPDMKMKLEMEGEVNGHKFSIEAEGEGKPYEGKQTIKAWSTTGKLPFAWDILSTSLTYGNRAFTKYPEGLEQ
     if (str_count(sequence) <= 400) {
       structureUI <- actionButton("structure", HTML("&nbspPredict structure & highlight"), icon = icon("robot"))
     } else {
-      # structureUI <- actionButton("structure_upload", HTML("&nbspToo large to model :( upload own structure to highlight"), icon = icon("file"))
       structureUI <- fileInput(
         "structure_upload",
         HTML('&nbspToo large to esmFold, upload own model <i class="fa-solid fa-file"></i>'),
@@ -1236,7 +1311,7 @@ MSKVEELIKPDMKMKLEMEGEVNGHKFSIEAEGEGKPYEGKQTIKAWSTTGKLPFAWDILSTSLTYGNRAFTKYPEGLEQ
                           conditionalPanel(
                             condition = "input.structure > 0",
                             style = "display: none;",
-                            withSpinner( uiOutput("structure_view", height = "100%"))
+                            uiOutput("structure_view", height = "100%")
                           )
                          )
                )
@@ -1403,6 +1478,9 @@ MSKVEELIKPDMKMKLEMEGEVNGHKFSIEAEGEGKPYEGKQTIKAWSTTGKLPFAWDILSTSLTYGNRAFTKYPEGLEQ
       } else {
         cat('oh no something went wrong with esmfold!:', status_code(response), '\n')
         output$molView <- renderText("Error fetching structure.")
+        sstop(session,TRUE, 'Error modeling structure', 'The esmFold server may be down. Try again later.', 'error')
+        shinyjs::hide('structure_view')
+        shinyjs::hide('molView')
       }
     } else {
       print('nahh')

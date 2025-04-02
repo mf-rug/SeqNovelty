@@ -73,7 +73,7 @@ shinyUI(page_navbar(
         height = "15vh",
 #         value = '>esmGFP
 # MSKVEELIKPDMKMKLEMEGEVNGHKFSIEAEGEGKPYEGKQTIKAWSTTGKLPFAWDILSTSLTYGNRAFTKYPEGLEQHDFFKQSFPEGYSWERTITYEDGATVKVTADISLEDGVLINKVKFKGENFPSDGPVMQKKTTGWEASTELITPDPATGGLKGEVKMRLKLEGGGHLLADFKTTYRSKKKEKLPLPGVHYVDHRIVNEKATHPEGKEYMIQYEHAVARL',
-        placeholder = "Paste single sequence (FASTA or seq only)"
+        placeholder = "Paste single sequence (FASTA or seq only) or link to a BLAST result"
       ), radioGroupButtons(
         'searchmode',
         NULL,
@@ -101,7 +101,8 @@ shinyUI(page_navbar(
                               selected = 500,
                               grid = TRUE
                             ))),
-            actionButton("run_blast", "BLAST")
+        actionButton("run_blast", "Run BLAST"),
+        actionButton("load_blast", "Load BLAST")
       ),
       conditionalPanel(
         "input.searchmode=='mmseqs'",
