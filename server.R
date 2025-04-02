@@ -230,7 +230,8 @@ shinyServer(function(input, output, session) {
     cat("Results downloaded as", output_file, "\n")
     
     # Step 6: Extract the tar.gz file
-    untar(output_file, exdir = "msa_results")
+    untar(output_file, exdir = "msa_results") 
+    file.remove(output_file)
     m8_file <- list.files("msa_results", pattern = "\\.m8$", full.names = TRUE)
     if (length(m8_file) == 0) stop("No .m8 file found in extracted results.")
     
