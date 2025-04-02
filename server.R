@@ -1,3 +1,12 @@
+sstop <- function(session, html, title, text, type) {
+  sendSweetAlert(
+    session = session,
+    html = html,
+    title = title,
+    text = text,
+    type = type
+  )
+}
 shinyServer(function(input, output, session) {
   
   change_window_title(session, 'SeqNovelty')
@@ -1223,7 +1232,12 @@ MSKVEELIKPDMKMKLEMEGEVNGHKFSIEAEGEGKPYEGKQTIKAWSTTGKLPFAWDILSTSLTYGNRAFTKYPEGLEQ
                       div(class = 'error_out', style = "text-align:center;", 
                           structureUI,
                           br(),br(),
-                          uiOutput("structure_view", height = "100%"))
+                          conditionalPanel(
+                            condition = "input.structure > 0",
+                            style = "display: none;",
+                            withSpinner( uiOutput("structure_view", height = "100%"))
+                          )
+                         )
                )
       )
     )
@@ -1357,6 +1371,8 @@ MSKVEELIKPDMKMKLEMEGEVNGHKFSIEAEGEGKPYEGKQTIKAWSTTGKLPFAWDILSTSLTYGNRAFTKYPEGLEQ
   })
   
   observeEvent(input$structure, {
+    print('predicting structure')
+    shinyjs::disable('structure')
     ref_seq <- results$alignment_table[1,-1]
     sequence <- paste0(ref_seq, collapse = '') %>% str_remove_all(., '-')
     
@@ -1365,26 +1381,26 @@ MSKVEELIKPDMKMKLEMEGEVNGHKFSIEAEGEGKPYEGKQTIKAWSTTGKLPFAWDILSTSLTYGNRAFTKYPEGLEQ
     
     # browser()
     
-    print(str_count(sequence))
     if (str_count(sequence) <= 400) {
       # Call esmfold API
       response <- POST("https://api.esmatlas.com/foldSequence/v1/pdb/",
                        body = sequence, encode = "raw")
-      
       if (status_code(response) == 200) {
+        print('success! got a response from esm server')
         pdb_result <- content(response, "text")
-        
+        print('downloaded pdb')
+      
         # Save PDB structure temporarily
         pdb_file <- tempfile(fileext = ".pdb")
         writeLines(pdb_result, pdb_file)
-        # Render the PDB in 3Dmol.js
         
-        shinyjs::hide('structure')
+        # Render the PDB in 3Dmol.js
         output$structure_view <- renderUI(r3dmolOutput('molView'))
         
         structure(pdb_file)
 
       } else {
+        print('oh no something went wrong with esmfold!')
         output$molView <- renderText("Error fetching structure.")
       }
     } else {

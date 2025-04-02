@@ -16,6 +16,7 @@ library(readr)
 library(jsonlite)
 library(r3dmol)
 library(xml2)
+library(shinycssloaders)
 
 # Configure reticulate options and virtual environment
 options(reticulate.output_handler = function(x) cat(x, "\n"))
