@@ -7,6 +7,27 @@ sstop <- function(session, html, title, text, type) {
     type = type
   )
 }
+
+
+blast_json <- fromJSON("blast_out.blast")
+hits <- blast_json$BlastOutput2$report$results$search$hits
+hit_df <- map_dfr(hits, function(hit) {
+  descriptions <- hit$description
+  hsps <- hit$hsps
+  
+  # If there are multiple HSPs, take the first one (most significant)
+  evalue <- hsps[[1]]$evalue
+  
+  # For each description, extract id and evalue
+  map_dfr(descriptions, function(desc) {
+    tibble(
+      id = desc$id,
+      accession = desc$accession,
+      title = desc$title,
+      evalue = evalue
+    )
+  })
+})
 shinyServer(function(input, output, session) {
   
   change_window_title(session, 'SeqNovelty')
@@ -17,6 +38,7 @@ shinyServer(function(input, output, session) {
   ref_seq_start_col <- reactiveVal(NULL)
   structure <- reactiveVal('')
   saveID <- reactiveVal(NULL)
+  hit_df <- reactiveVal(NULL)
   
   hl <- function(...) {
     paste0('<span style="color:', ifelse(input$dark_mode == 'dark', 'aqua', 'teal'), 
@@ -312,6 +334,33 @@ shinyServer(function(input, output, session) {
           'error')
   }
   
+  extract_blast_df <- function(json_file) {
+
+    # Read JSON file
+    blast_data <- fromJSON(json_file)
+    
+    # Get all hits
+    hits <- blast_data$BlastOutput2$report$results$search$hits
+    
+    df <- map_dfr(hits, function(hit) {
+      descriptions <- hit$description
+      hsps <- hit$hsps
+      
+      # If there are multiple HSPs, take the first one (most significant)
+      evalue <- hsps[[1]]$evalue
+      
+      # For each description, extract id and evalue
+      map_dfr(descriptions, function(desc) {
+        tibble(
+          id = desc$id,
+          evalue = evalue
+        )
+      })
+    })
+    
+    return(df)
+  }
+  
   extract_blast_ids <- function(json_file, single_id=TRUE) {
     # Read the JSON file
     blast_data <- fromJSON(json_file)
@@ -388,7 +437,11 @@ shinyServer(function(input, output, session) {
       shinyjs::disable('load_blast') 
     } else {
       shinyjs::enable('run_blast')
-      shinyjs::enable('load_blast')
+      if (input$blast_url != '') {
+        shinyjs::enable('load_blast')
+      } else {
+        shinyjs::disable('load_blast') 
+      }
     }
   })
   
@@ -457,13 +510,18 @@ shinyServer(function(input, output, session) {
     results$seq_ids <- NULL
     results$seq_ids <- NULL
     print(paste('ref_name() and results now', ref_name()))
-    if (!startsWith(input$seq_input, 'https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=')) {
+    input_parse <- parse_fasta_in(input$seq_input)
+    req(input_parse)
+    input_id <- input_parse[1]
+    input_seq <- input_parse[2]
+    ref_name(input_id)
+    if (!startsWith(input$blast_url, 'https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=')) {
       sstop(session, TRUE, 'Error', 'https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=', 'error')
       return()
     }
     base_url <- "https://blast.ncbi.nlm.nih.gov/Blast.cgi"
-    rid <- str_remove(input$seq_input, fixed('https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=')) %>% str_remove(., fixed('%20'))
-    print(rid)
+    rid <- str_remove(input$blast_url, fixed('https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=')) %>% str_remove(., fixed('%20'))
+    cat('rid is: ', rid, '\n')
     response <- GET(
       url = base_url,
       query = list(
@@ -491,6 +549,8 @@ shinyServer(function(input, output, session) {
     withProgress(message = "Processing BLAST", value = 0.6, {
       write_file(blast_out, 'blast_out.blast')
       ids <- extract_blast_ids('blast_out.blast', single_id=TRUE)
+      hit_df <- extract_blast_df('blast_out.blast')
+      hit_df(hit_df)
     })
 
     withProgress(message = "Getting sequences", value = 0.7, {
@@ -504,6 +564,8 @@ shinyServer(function(input, output, session) {
     })
     
     blast_link <- paste0("https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=", rid)
+    browser()
+    
     sendSweetAlert(
       session = session,
       html = TRUE,
@@ -693,7 +755,27 @@ shinyServer(function(input, output, session) {
       if (is.null(test())) {
         # print('no test seqnovelty')
         print(ref_seq_id)
+        browser()
+        aln_df <- data.frame(id = str_remove(aln[seq(1,length(aln), by=2)], '^>'),
+                             seq = aln[seq(2,length(aln), by=2)])
+        
 
+        matched_df <- map_dfr(aln_df$id, function(qid) {
+          match <- hit_df()[grepl(qid, hit_df()$id), ]
+          
+          if (nrow(match) > 0) {
+            match[1, ]  # Take the first matching row
+          } else {
+            # Return a row with NAs and the same structure as hit_df
+            tibble(id = NA_character_, evalue = NA_real_)
+          }
+        })
+        aln_df <- bind_cols(aln_df, matched_df$evalue)  
+        
+        # CONTINUE HERE< NOT DONE
+        
+        
+        
         # sequence analysis script
         source_python("SeqNoveltyMin.py")  
         # Set up `sys.argv` for the script

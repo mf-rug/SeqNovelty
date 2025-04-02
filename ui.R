@@ -14,6 +14,8 @@ library(httr)
 library(stringr)
 library(readr)
 library(jsonlite)
+library(dplyr)
+library(purrr)
 library(r3dmol)
 library(xml2)
 library(shinycssloaders)
@@ -73,39 +75,45 @@ shinyUI(page_navbar(
         height = "15vh",
 #         value = '>esmGFP
 # MSKVEELIKPDMKMKLEMEGEVNGHKFSIEAEGEGKPYEGKQTIKAWSTTGKLPFAWDILSTSLTYGNRAFTKYPEGLEQHDFFKQSFPEGYSWERTITYEDGATVKVTADISLEDGVLINKVKFKGENFPSDGPVMQKKTTGWEASTELITPDPATGGLKGEVKMRLKLEGGGHLLADFKTTYRSKKKEKLPLPGVHYVDHRIVNEKATHPEGKEYMIQYEHAVARL',
-        placeholder = "Paste single sequence (FASTA or seq only) or link to a BLAST result"
+        placeholder = "Paste single sequence (FASTA or seq only)"
       ), radioGroupButtons(
         'searchmode',
         NULL,
         choices = c(
-          'BLAST',
-          "mmseqs"
+          'Load BLAST',
+          'Run BLAST',
+          "Run mmseqs"
           ),
         size = 's',
         justified = TRUE
       ),
       conditionalPanel(
-        "input.searchmode=='BLAST'",
-          fluidRow(column(6,
-                            pickerInput(
-                              inputId = "blast_db",
-                              label = "database:", 
-                              choices = c("nr", "swissprot", "pdb", "pataa", "refseq_select", "refseq_protein", "landmark", "env_nr", "tsa_nr"),
-                              selected = 'nr',
-                              width = "100%")),
-                   column(6,
-                            sliderTextInput(
-                              inputId = "blast_seq_n",
-                              label = "max num seq:", 
-                              choices = c(100, 250, 500, 1000),
-                              selected = 500,
-                              grid = TRUE
-                            ))),
-        actionButton("run_blast", "Run BLAST"),
+        "input.searchmode=='Load BLAST'",
+          fluidRow(column(12,
+                            textInput('blast_url', 'Blast URL', width = '100%', placeholder = 'e.g. https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=123456'))),
         actionButton("load_blast", "Load BLAST")
       ),
       conditionalPanel(
-        "input.searchmode=='mmseqs'",
+        "input.searchmode=='Run BLAST'",
+        fluidRow(column(6,
+                        pickerInput(
+                          inputId = "blast_db",
+                          label = "database:", 
+                          choices = c("nr", "swissprot", "pdb", "pataa", "refseq_select", "refseq_protein", "landmark", "env_nr", "tsa_nr"),
+                          selected = 'nr',
+                          width = "100%")),
+                 column(6,
+                        sliderTextInput(
+                          inputId = "blast_seq_n",
+                          label = "max num seq:", 
+                          choices = c(100, 250, 500, 1000),
+                          selected = 500,
+                          grid = TRUE
+                        ))),
+        actionButton("run_blast", "Run BLAST"),
+      ),
+      conditionalPanel(
+        "input.searchmode=='Run mmseqs'",
         pickerInput(
           inputId = "mmseqs_db",
           label = HTML("database:&nbsp"), inline = TRUE,
@@ -200,13 +208,20 @@ shinyUI(page_navbar(
         ),
         conditionalPanel(
           "input.align_mode=='pairwise'",
-          sliderInput('ident_cutoff', '% identity cutoff', 0, 100, 33)
+          sliderTextInput(
+            inputId = "evalue_cutoff",
+            label = 'E-value cutoff', 
+            choices = c(1e-20, 1e-18, 1e-16, 1e-14, 1e-12, 1e-10, 1e-8, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1),
+            selected = 1e-12,
+            grid = TRUE
+          ),
+          sliderInput('ident_cutoff', '% identity cutoff', 0, 100, 0)
         ),
         HTML('<hr style="margin: 0px 0 15px; border-color: #656565; "/>'),
         actionButton("run_script", "Run Analysis"),
         actionButton("run_testm", "Demo Run"),
         # actionButton("run_testm", "Test Run M"),
-        # prettySwitch('rem_gaps', 'rem_gaps', value = TRUE, status = 'primary'),
+        # prettySwitch('rem_gaps', 'rem_gaps', value = TRUE, status = 'primary')
       ),
     width=3
     ),

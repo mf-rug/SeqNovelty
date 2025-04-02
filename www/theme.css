@@ -175,6 +175,12 @@
         font-size: 13px !important;
     }
 
+    /* Sequence input styling */
+    #blast_url {
+        padding: 6px !important;
+        font-size: 13px !important;
+    }
+    
     #restore_id {
         padding: 6px !important;
         font-size: 13px !important;
