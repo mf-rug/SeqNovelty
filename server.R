@@ -9,25 +9,26 @@ sstop <- function(session, html, title, text, type) {
 }
 
 
-blast_json <- fromJSON("blast_out.blast")
-hits <- blast_json$BlastOutput2$report$results$search$hits
-hit_df <- map_dfr(hits, function(hit) {
-  descriptions <- hit$description
-  hsps <- hit$hsps
-  
-  # If there are multiple HSPs, take the first one (most significant)
-  evalue <- hsps[[1]]$evalue
-  
-  # For each description, extract id and evalue
-  map_dfr(descriptions, function(desc) {
-    tibble(
-      id = desc$id,
-      accession = desc$accession,
-      title = desc$title,
-      evalue = evalue
-    )
-  })
-})
+# blast_json <- fromJSON("blast_out.blast")
+# hits <- blast_json$BlastOutput2$report$results$search$hits
+# hit_df <- map_dfr(hits, function(hit) {
+#   descriptions <- hit$description
+#   hsps <- hit$hsps
+#   
+#   # If there are multiple HSPs, take the first one (most significant)
+#   evalue <- hsps[[1]]$evalue
+#   
+#   # For each description, extract id and evalue
+#   map_dfr(descriptions, function(desc) {
+#     tibble(
+#       id = desc$id,
+#       accession = desc$accession,
+#       title = desc$title,
+#       evalue = evalue
+#     )
+#   })
+# })
+
 shinyServer(function(input, output, session) {
   
   change_window_title(session, 'SeqNovelty')
@@ -111,10 +112,16 @@ shinyServer(function(input, output, session) {
         )
       )
       Sys.sleep(4)
-    }
+      fasta_content <- fasta_content[1:which(str_detect(fasta_content, '^>'))[cutoff +1]-1]
+    } 
     # Read the FASTA file
-    fasta_content <- fasta_content[1:which(str_detect(fasta_content, '^>'))[cutoff +1]-1]
     
+    # fasta_id_lines <- which(str_detect(fasta_content, '^>'))
+    # max_seqs <- min(nseqs, cutoff + 1)
+    # cutoff_line <- which(str_detect(fasta_content, '^>'))[max_seqs]
+    # fasta_content <- fasta_content[1:cutoff_line-1]
+    
+
     fasta_content <- paste(fasta_content, collapse = '\n')
     
     # Step 1: Submit the job
@@ -401,7 +408,9 @@ shinyServer(function(input, output, session) {
     for (chunk in id_chunks) {
       print(paste('fetching chunk'))
       # Create a comma-separated string of IDs for the current chunk
-      seqs <- paste(chunk[[1]], collapse = ",")
+      # here used to be a [[1]] list, why?
+      # seqs <- paste(chunk[[1]], collapse = ",")
+      seqs <- paste(chunk, collapse = ",")
       
       # Construct the URL for the current chunk
       query_url <- modify_url(base_url, query = list(
@@ -426,7 +435,6 @@ shinyServer(function(input, output, session) {
           next
         }
       }
-      
       # Append the fetched FASTA data to the merged result
       all_fasta <- paste0(all_fasta, content(response, as = "text", encoding = "UTF-8"))
       Sys.sleep(2)
@@ -674,6 +682,7 @@ shinyServer(function(input, output, session) {
           
           # run MSA online
           withProgress(message = paste0('Running ', input$msa_tool, ' alignment on EBI server'), value = 0.15, {
+            print('EBi server')
             msa_out <- run_msa(input_file, input$msa_tool)
           })
           
@@ -746,6 +755,7 @@ shinyServer(function(input, output, session) {
       results$log <- paste("Error:", e$message)
       print(paste('Error running ', input$msa_tool, ': ', e$message), type = "error")
       showNotification(paste('Error running ', input$msa_tool, ': ', e$message), type = "error")
+      browser()
     })
     if (is.null(test()) && !file.exists('initial_alignment.fasta')) {
       sendSweetAlert(
@@ -763,24 +773,24 @@ shinyServer(function(input, output, session) {
       if (is.null(test())) {
         # print('no test seqnovelty')
         print(ref_seq_id)
-        browser()
-        aln_df <- data.frame(id = str_remove(aln[seq(1,length(aln), by=2)], '^>'),
-                             seq = aln[seq(2,length(aln), by=2)])
-        
-
-        matched_df <- map_dfr(aln_df$id, function(qid) {
-          match <- hit_df()[grepl(qid, hit_df()$id), ]
-          
-          if (nrow(match) > 0) {
-            match[1, ]  # Take the first matching row
-          } else {
-            # Return a row with NAs and the same structure as hit_df
-            tibble(id = NA_character_, evalue = NA_real_)
-          }
-        })
-        aln_df <- bind_cols(aln_df, matched_df$evalue)  
-        
-        # CONTINUE HERE< NOT DONE
+        # browser()
+        # aln_df <- data.frame(id = str_remove(aln[seq(1,length(aln), by=2)], '^>'),
+        #                      seq = aln[seq(2,length(aln), by=2)])
+        # 
+        # 
+        # matched_df <- map_dfr(aln_df$id, function(qid) {
+        #   match <- hit_df()[grepl(qid, hit_df()$id), ]
+        #   
+        #   if (nrow(match) > 0) {
+        #     match[1, ]  # Take the first matching row
+        #   } else {
+        #     # Return a row with NAs and the same structure as hit_df
+        #     tibble(id = NA_character_, evalue = NA_real_)
+        #   }
+        # })
+        # aln_df <- bind_cols(aln_df, matched_df$evalue)  
+        # 
+        # # CONTINUE HERE< NOT DONE
         
         
         
