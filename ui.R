@@ -90,7 +90,7 @@ shinyUI(page_navbar(
       conditionalPanel(
         "input.searchmode=='Load BLAST'",
           fluidRow(column(12,
-                            textInput('blast_url', 'Blast URL', width = '100%', placeholder = 'e.g. https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=123456'))),
+                            textInput('blast_url', 'Blast RID or URL ', width = '100%', placeholder = 'e.g. 0ABC1REF123 or https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=0ABC1REF123'))),
         actionButton("load_blast", "Load BLAST")
       ),
       conditionalPanel(

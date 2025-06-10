@@ -46,7 +46,7 @@ shinyServer(function(input, output, session) {
   }
   
   parse_fasta_in <- function(input_string) {
-    if (str_detect(input_string, '^>')) {
+    if (str_detect(input_string, '^>') & str_detect(input_string, '\n')) {
       input_id <- str_extract(input_string, '(?<=>).*(?=\n)') 
       input_seq <- str_remove(input_string, fixed(input_id)) %>% str_remove_all(., '^>|\n| ')
       input_id <- input_id %>% str_replace_all(., ' ', '_')
@@ -54,18 +54,23 @@ shinyServer(function(input, output, session) {
       input_id <- 'UnknownInput'
       input_seq <- str_remove_all(input_string, '\n| ')
     }
-    if (str_detect(input_seq, '[^ACDEFGHIKLMNPQRSTVWYZ]')) {
+    if (is.na(input_seq) || is.null(input_seq) || str_detect(input_seq, '[^ACDEFGHIKLMNPQRSTVWYZ]')) {
+      invalid_str <- paste(str_extract_all(input_seq, '[^ACDEFGHIKLMNPQRSTVWYZ]')[[1]], collapse = ',')
+      if (!is.na(invalid_str)) {
+        invalid_info <- paste0(': ', invalid_str)
+      } else {
+        invalid_info <- '.'
+      }
       cat('Invalid format / invalid characters in input seq:', input_seq, '\n')
       sendSweetAlert(
         session = session,
         html = TRUE,
         title = "Input error",
         text = tags$span(
-          "Your input sequence contains invalid characters."
+          paste0("Your input sequence contains invalid characters", invalid_info)
         ), 
         type = "error"
       )
-      # browser()
       return(NULL)
     }
     
@@ -515,13 +520,17 @@ shinyServer(function(input, output, session) {
     input_id <- input_parse[1]
     input_seq <- input_parse[2]
     ref_name(input_id)
-    if (!startsWith(input$blast_url, 'https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=')) {
-      sstop(session, TRUE, 'Error', 'https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=', 'error')
+
+    if (startsWith(input$blast_url, 'https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=')) {
+      rid <- str_remove(input$blast_url, fixed('https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=')) %>% str_remove(., fixed('%20'))
+    } else if (str_detect(input$blast_url,'^[A-Z0-9]{10,12}$')) {
+      rid <- input$blast_url
+    } else {
+      sstop(session, TRUE, 'Error', 'You have to provide a valid URL or RID', 'error')
       return()
     }
-    base_url <- "https://blast.ncbi.nlm.nih.gov/Blast.cgi"
-    rid <- str_remove(input$blast_url, fixed('https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=')) %>% str_remove(., fixed('%20'))
     cat('rid is: ', rid, '\n')
+    base_url <- "https://blast.ncbi.nlm.nih.gov/Blast.cgi"
     response <- GET(
       url = base_url,
       query = list(
@@ -564,8 +573,7 @@ shinyServer(function(input, output, session) {
     })
     
     blast_link <- paste0("https://blast.ncbi.nlm.nih.gov/Blast.cgi?CMD=Get&RID=", rid)
-    browser()
-    
+
     sendSweetAlert(
       session = session,
       html = TRUE,
