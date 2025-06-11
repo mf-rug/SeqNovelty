@@ -777,7 +777,7 @@ shinyServer(function(input, output, session) {
       results$log <- paste("Error:", e$message)
       print(paste('Error running ', input$msa_tool, ': ', e$message), type = "error")
       showNotification(paste('Error running ', input$msa_tool, ': ', e$message), type = "error")
-      browser()
+      # browser()
     })
     
     if (is.null(test()) && !file.exists('initial_alignment.fasta')) {

@@ -95,6 +95,11 @@ shinyUI(page_navbar(
       ),
       conditionalPanel(
         "input.searchmode=='Run BLAST'",
+        fluidRow(column(12, tags$p(style= 'font-size: 12px; color:grey;',
+          tags$i('Running BLAST via this app may slow down the experience for other users, please consider',
+          tags$a(href = 'https://blast.ncbi.nlm.nih.gov/Blast.cgi?PROGRAM=blastp&PAGE_TYPE=BlastSearch&LINK_LOC=blasthome', target = '_blank', 'running BLAST by yourself'), 
+          ' and use the ', tags$strong('Load BLAST'), 'function of this app.'),
+        ))),
         fluidRow(column(6,
                         pickerInput(
                           inputId = "blast_db",
@@ -107,13 +112,16 @@ shinyUI(page_navbar(
                           inputId = "blast_seq_n",
                           label = "max num seq:", 
                           choices = c(100, 250, 500, 1000),
-                          selected = 500,
+                          selected = 1000,
                           grid = TRUE
                         ))),
         actionButton("run_blast", "Run BLAST"),
       ),
       conditionalPanel(
         "input.searchmode=='Run mmseqs'",
+        fluidRow(column(12, tags$p(style= 'font-size: 12px; color:grey;',
+                                   tags$i('For highly novel sequences, mmseqs may give unexpected results due to the retrieval of relatively distantly related sequences. Adjust the alignment settings if the alignments look unreliable.'),
+        ))),
         pickerInput(
           inputId = "mmseqs_db",
           label = HTML("database:&nbsp"), inline = TRUE,
