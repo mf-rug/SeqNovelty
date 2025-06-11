@@ -91,7 +91,8 @@ shinyServer(function(input, output, session) {
   }
   
 
-  # Function to submit and retrieve MAFFT alignment
+  # Function to submit and retrieve MSA alignment
+  # input: search_sequences.fasta, returns aligned seqs to be written to initial_alignment.fasta
   run_msa <- function(fasta_file, msa_tool) {
     cutoff <- ifelse(input$msa_tool == 'clustalo',
                      3999,
@@ -102,15 +103,15 @@ shinyServer(function(input, output, session) {
     
     nseqs <- sum(str_count(fasta_content, '^>'))
     if (nseqs > cutoff) {
-      showNotification(
-        paste0(
-          'This tool is limited to ',
-          cutoff,
-          ' sequences, removing ',
-          nseqs - cutoff,
-          ' sequences from analysis.'
-        )
+      cutoff_msg <- paste0(
+        'This tool is limited to ',
+        cutoff,
+        ' sequences, removing ',
+        nseqs - cutoff -1,
+        ' sequence(s) for alignment analysis.'
       )
+      showNotification(cutoff_msg)
+      cat(cutoff_msg, '\n')
       Sys.sleep(4)
       fasta_content <- fasta_content[1:which(str_detect(fasta_content, '^>'))[cutoff +1]-1]
     } 
@@ -177,15 +178,18 @@ shinyServer(function(input, output, session) {
     all_fasta <- ""
     
     # Process IDs in batches
+    i <-1
     for (batch in split(ids, ceiling(seq_along(ids) / batch_size))) {
       query <- paste0("query=(", paste(batch, collapse = "%20OR%20"), ")")
       url <- paste0(base_url, "?", query, "&format=fasta")
+      cat('Fetching fasta batch ', i, ' / ', length(ids), ' from uniprot at ', url, '\n')
       
       response <- request(url) |>
         req_perform()
       
       fasta_data <- resp_body_string(response)  # Read as plain text
       all_fasta <- paste0(all_fasta, fasta_data, "\n")  # Append results
+      i <- i + 1
     }
     cat('Retrieved ', str_count(all_fasta, '^>'), ' fasta sequences.\n')
     return(all_fasta)
@@ -266,10 +270,16 @@ shinyServer(function(input, output, session) {
     # Step 6: Extract the tar.gz file
     untar(output_file, exdir = "msa_results") 
     file.remove(output_file)
-    m8_file <- list.files("msa_results", pattern = "\\.m8$", full.names = TRUE)
-    if (length(m8_file) == 0) stop("No .m8 file found in extracted results.")
+    m8_file <- list.files("msa_results", pattern = "\\.m8$", full.names = TRUE) %>% grep("report", ., invert = TRUE, value = TRUE)
+    if (length(m8_file) != 1) {
+      sstop(session, FALSE, 'Error', paste0("There should be just a single .m8 file, but found ",
+                  length(m8_file), ' files :',
+                  paste(m8_file, collapse = ',')
+      ), 'error')
+    }
     
     # Step 7: Process `.m8` file and extract hit IDs
+    cat("Analysing mmseqs sequences\n")
     m8_data <- read_tsv(m8_file, col_names = FALSE, show_col_types = FALSE)
     hit_ids <- str_extract(m8_data$X2, "(?<=^AF-)[^-]+")
     return(hit_ids)
@@ -315,28 +325,36 @@ shinyServer(function(input, output, session) {
         paste0('<a href="', url, '" target="_blank">', url, ' &nbsp <i class="fas fa-external-link-alt"></i></a>')
       )
       Sys.sleep(30) # Wait 30 seconds before checking
-      status_response <- GET(base_url, query = list(CMD = "Get", RID = rid, FORMAT_TYPE = "JSON2_S"))
-      status_text <- content(status_response, as = "text")
-      
-      if (grepl("Status=(?:WAITING|UNKNOWN)", status_text)) {
-        cat("Still waiting for results of", rid, ":", str_extract(status_text, 'Status=.*'), ",\n")
-      } else if (grepl("Status=FAILED", status_text)) {
-        stop("BLAST job failed.")
-      } else if (!grepl('Status=', status_text)) {
-        cat("BLAST results ready.\n")
+      tryCatch({
+
+        status_response <- GET(base_url, query = list(CMD = "Get", RID = rid, FORMAT_TYPE = "JSON2_S"))
+        status_text <- content(status_response, as = "text")
         
-        # Retrieve results in text format
-        results_response <- GET(base_url, query = list(
-          CMD = "Get",
-          RID = rid,
-          FORMAT_TYPE = "JSON2_S",          # Options: JSON2, XML, Text
-          FORMAT_OBJECT = "Alignment"   # Retrieve alignments
-        ))
-        return(list(rid, content(results_response, as = "text")))
-      } else {
-        print('something odd')
-        # browser()
-      }
+        if (grepl("Status=(?:WAITING|UNKNOWN)", status_text)) {
+          cat("Still waiting for results of", rid, ":", str_extract(status_text, 'Status=.*'), ",\n")
+        } else if (grepl("Status=FAILED", status_text)) {
+          sstop(session, TRUE, "BLAST job failed.")
+        } else if (!grepl('Status=', status_text)) {
+          cat("BLAST results ready.\n")
+          
+          # Retrieve results in text format
+          results_response <- GET(base_url, query = list(
+            CMD = "Get",
+            RID = rid,
+            FORMAT_TYPE = "JSON2_S",          # Options: JSON2, XML, Text
+            FORMAT_OBJECT = "Alignment"   # Retrieve alignments
+          ))
+          return(list(rid, content(results_response, as = "text")))
+        } else {
+          print('something odd')
+          # browser()
+        }
+      }, error = function(e) {
+        showNotification(e$message)
+        cat(e$message, '\n')
+        sstop(session, TRUE, "Error in Blast")
+        return()
+      })
     }
     sstop(session, TRUE, "Error in Blast", 
           text = tags$span(
@@ -492,7 +510,6 @@ shinyServer(function(input, output, session) {
         return()
       })
     })
-    # browser()
     write_file(paste0('>', input_id, '\n', input_seq, 
                       '\n', fasta_data),
                file = 'search_sequences.fasta')
@@ -573,10 +590,14 @@ shinyServer(function(input, output, session) {
     withProgress(message = "Getting sequences", value = 0.7, {
       fasta_data <- fetch_sequences(ids)
       # if (success) {
-      writeLines(fasta_data, con = 'search_sequences.fasta')
-      write_file(paste0('>',input_id,'\n',input_seq,'\n'), 
-                 'search_sequences.fasta', 
-                 append = TRUE)
+      write_file(paste0('>', input_id, '\n', input_seq, 
+                        '\n', fasta_data),
+                 file = 'search_sequences.fasta')
+      # 
+      # writeLines(fasta_data, con = 'search_sequences.fasta')
+      # write_file(paste0('>',input_id,'\n',input_seq,'\n'), 
+      #            'search_sequences.fasta', 
+      #            append = TRUE)
       # } else { stop() }
     })
     
@@ -646,6 +667,7 @@ shinyServer(function(input, output, session) {
   
   
   # Function to run the Python script and process results
+  # the function uses search_sequences.fasta as input_file
   run_analysis <- function(input_file, ref_seq_id) {
     # if (is.null(ref_seq_id)) {
     #   ref_seq_id <- 'esmGFP'
@@ -662,7 +684,7 @@ shinyServer(function(input, output, session) {
         
         if (input$mode != 'msa' && input$align_mode == 'MSA') {
           
-          # run local
+          # run local - abandoned because cant implement on shinyapps.io
           # # mafft alignment script
           # source_python("run_msa.py")  
           # 
@@ -682,7 +704,7 @@ shinyServer(function(input, output, session) {
           
           # run MSA online
           withProgress(message = paste0('Running ', input$msa_tool, ' alignment on EBI server'), value = 0.15, {
-            print('EBi server')
+            print('now running run_msa using EBI server')
             msa_out <- run_msa(input_file, input$msa_tool)
           })
           
@@ -691,8 +713,9 @@ shinyServer(function(input, output, session) {
             return(NULL)
           }
           writeLines(msa_out, 'initial_alignment.fasta')
-          cat('Success')
+          cat('Success\n')
 
+        # since it's not MSA mode, it's pairwise mode, run locally
         } else {
           print(paste('its an msa / pairwise requested, so skipping ', input$msa_tool, ' and using', input_file, 'as initial_alignment.fasta'))
           if (input$align_mode == 'MSA') {
@@ -745,7 +768,6 @@ shinyServer(function(input, output, session) {
               print(paste("Error merging pairwise alignments ", e$message), type = "error")
               showNotification(paste("Error merging pairwise alignments ", e$message), type = "error")
             })
-            
           }
         }
       } else {
@@ -757,6 +779,7 @@ shinyServer(function(input, output, session) {
       showNotification(paste('Error running ', input$msa_tool, ': ', e$message), type = "error")
       browser()
     })
+    
     if (is.null(test()) && !file.exists('initial_alignment.fasta')) {
       sendSweetAlert(
         session = session,
@@ -767,7 +790,7 @@ shinyServer(function(input, output, session) {
         type = "info"
       )
       return()
-      }
+    }
     
     tryCatch({
       if (is.null(test())) {
