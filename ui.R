@@ -216,14 +216,26 @@ shinyUI(page_navbar(
         ),
         conditionalPanel(
           "input.align_mode=='pairwise'",
-          sliderTextInput(
-            inputId = "evalue_cutoff",
-            label = 'E-value cutoff', 
-            choices = c(1e-20, 1e-18, 1e-16, 1e-14, 1e-12, 1e-10, 1e-8, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1),
-            selected = 1e-12,
-            grid = TRUE
+          tags$details(
+            tags$summary(HTML("Sequence Cutoff Settings<br><br>")),
+            div(
+              sliderTextInput(
+                inputId = "evalue_cutoff",
+                label = 'E-value cutoff', 
+                choices = c(1e-20, 1e-18, 1e-16, 1e-14, 1e-12, 1e-10, 1e-8, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1),
+                selected = 1e-12,
+                grid = TRUE
+              ),
+              sliderInput('ident_cutoff', '% identity cutoff', 0, 100, 0)
+            )
           ),
-          sliderInput('ident_cutoff', '% identity cutoff', 0, 100, 0)
+          tags$details(
+            tags$summary(HTML("Alignment Settings<br><br>")),
+            div(
+              sliderInput('open_gap_pen', 'open gap penalty', -10, 0, -10, 0.5),
+              sliderInput('ext_gap_pen', 'extend gap penalty', -10, 0, -0.5, 0.5)
+            )
+          )
         ),
         HTML('<hr style="margin: 0px 0 15px; border-color: #656565; "/>'),
         actionButton("run_script", "Run Analysis"),

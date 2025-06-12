@@ -730,7 +730,9 @@ shinyServer(function(input, output, session) {
                 'run_pairwise_align.py',
                 input_file,
                 ref_seq_id,
-                input$ident_cutoff
+                input$ident_cutoff,
+                input$open_gap_pen,
+                input$ext_gap_pen
               )
               sys$argv <- sys_args
               cat('Running this command:\npython3', paste(sys_args, collapse = " "),'\n')

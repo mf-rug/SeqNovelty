@@ -15,7 +15,7 @@ def calculate_identity(seq1, seq2):
     total = len(seq1)
     return (matches / total) * 100
 
-def create_pairwise_alignments(input_fasta, ref_seq_id, identity_threshold):
+def create_pairwise_alignments(input_fasta, ref_seq_id, identity_threshold, open_gap_pen, ext_gap_pen):
     """
     Create pairwise alignments between a reference sequence and all other sequences in a FASTA file.
     
@@ -53,8 +53,8 @@ def create_pairwise_alignments(input_fasta, ref_seq_id, identity_threshold):
     aligner = PairwiseAligner()
     aligner.mode = 'global'
     aligner.substitution_matrix = substitution_matrices.load("BLOSUM62")
-    aligner.open_gap_score = -10  # Standard gap opening penalty
-    aligner.extend_gap_score = -0.5  # Standard gap extension penalty
+    aligner.open_gap_score = open_gap_pen  
+    aligner.extend_gap_score = ext_gap_pen  
     aligner.target_end_gap_score = 0  # Free end gaps
     aligner.query_end_gap_score = 0  # Free end gaps
 
@@ -92,7 +92,9 @@ def main():
     input_fasta = sys.argv[1]
     ref_seq_id = sys.argv[2]
     identity_threshold = float(sys.argv[3])  # Get the identity threshold from command line
-    create_pairwise_alignments(input_fasta=input_fasta, ref_seq_id=ref_seq_id, identity_threshold=identity_threshold)
+    open_gap_pen = float(sys.argv[4])  # Get the identity threshold from command line
+    ext_gap_pen = float(sys.argv[5])  # Get the identity threshold from command line
+    create_pairwise_alignments(input_fasta, ref_seq_id, identity_threshold, open_gap_pen, ext_gap_pen)
     print(f"run_pairwise ran with {ref_seq_id} on {input_fasta}, outputs saved to ./pairwise_alignments/")
 
 
